@@ -1,4 +1,4 @@
-package com.demo.upimesh.service;
+package com.shaswatnaman.upimesh.service;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * In-memory idempotency cache. In production this would be Redis with SETNX +
  * TTL — exactly the same semantics, just distributed across instances.
  *
- * The contract:
+ * Contract:
  *   - claim(hash) returns true on first call, false on every call after that
  *     (within the TTL window)
  *   - the operation is atomic — even if 100 threads call claim(hash) at the
@@ -30,13 +30,11 @@ public class IdempotencyService {
     private long ttlSeconds;
 
     /**
-     * Try to claim a hash. Returns true if this caller is the first; false if
-     * someone else already claimed it (i.e. the packet is a duplicate).
+     * Try to claim a hash. Returns true if this is the first claimer;
+     * false if someone else already claimed it (i.e. the packet is a duplicate).
      */
     public boolean claim(String packetHash) {
-        Instant now = Instant.now();
-        Instant prev = seen.putIfAbsent(packetHash, now);
-        return prev == null;
+        return seen.putIfAbsent(packetHash, Instant.now()) == null;
     }
 
     public int size() {

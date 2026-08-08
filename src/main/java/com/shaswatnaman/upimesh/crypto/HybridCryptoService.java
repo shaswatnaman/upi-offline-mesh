@@ -1,8 +1,7 @@
-package com.demo.upimesh.crypto;
+package com.shaswatnaman.upimesh.crypto;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.demo.upimesh.model.PaymentInstruction;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.shaswatnaman.upimesh.model.PaymentInstruction;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
@@ -13,28 +12,30 @@ import javax.crypto.spec.OAEPParameterSpec;
 import javax.crypto.spec.PSource;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.spec.MGF1ParameterSpec;
 import java.util.Base64;
+import java.util.HexFormat;
 
 /**
  * Hybrid encryption — the same pattern used by TLS, PGP, Signal, etc.
  *
  * Why hybrid? RSA can only encrypt small data (~245 bytes for a 2048-bit key).
- * Our payment instruction (JSON) might be ~300 bytes, and in real use we might
- * include device certificates and signatures pushing it well over.
+ * Our payment instruction (JSON) can exceed that, and in real use we'd include
+ * device certificates and signatures pushing it further.
  *
  * Solution: generate a fresh AES key per packet, encrypt the JSON with AES-GCM
- * (fast + authenticated), then encrypt JUST the AES key with RSA-OAEP.
+ * (fast + authenticated), then encrypt just the AES key with RSA-OAEP.
  *
  * Wire format (after base64 encoding):
  *   [ 256 bytes RSA-encrypted AES key ][ 12 bytes GCM IV ][ ciphertext + 16-byte tag ]
  *
  * AES-GCM is authenticated encryption: any single-bit tampering with the ciphertext
- * causes decryption to fail with an exception. This is what makes it safe for
- * untrusted intermediates to hold.
+ * causes decryption to fail with an exception. This makes it safe for
+ * untrusted intermediates to hold the packet.
  */
 @Service
 public class HybridCryptoService {
@@ -48,9 +49,11 @@ public class HybridCryptoService {
 
     private final SecureRandom rng = new SecureRandom();
     private final ObjectMapper json = new ObjectMapper();
+    private final ServerKeyHolder serverKey;
 
-    @Autowired
-    private ServerKeyHolder serverKey;
+    public HybridCryptoService(ServerKeyHolder serverKey) {
+        this.serverKey = serverKey;
+    }
 
     /**
      * Encrypt a payment instruction with the server's public key.
@@ -99,7 +102,6 @@ public class HybridCryptoService {
             throw new IllegalArgumentException("Ciphertext too short");
         }
 
-        // Unpack
         byte[] encryptedAesKey = new byte[RSA_ENCRYPTED_KEY_BYTES];
         byte[] iv = new byte[GCM_IV_BYTES];
         byte[] aesCiphertext = new byte[all.length - RSA_ENCRYPTED_KEY_BYTES - GCM_IV_BYTES];
@@ -117,7 +119,7 @@ public class HybridCryptoService {
         byte[] aesKeyBytes = rsa.doFinal(encryptedAesKey);
         SecretKey aesKey = new SecretKeySpec(aesKeyBytes, "AES");
 
-        // 2. AES-GCM decrypt + verify the tag.
+        // 2. AES-GCM decrypt + verify the authentication tag.
         Cipher aes = Cipher.getInstance(AES_TRANSFORMATION);
         aes.init(Cipher.DECRYPT_MODE, aesKey, new GCMParameterSpec(GCM_TAG_BITS, iv));
         byte[] plaintext = aes.doFinal(aesCiphertext);
@@ -134,11 +136,7 @@ public class HybridCryptoService {
      */
     public String hashCiphertext(String base64Ciphertext) throws Exception {
         MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
-        byte[] hash = sha256.digest(base64Ciphertext.getBytes());
-        StringBuilder hex = new StringBuilder();
-        for (byte b : hash) {
-            hex.append(String.format("%02x", b));
-        }
-        return hex.toString();
+        byte[] hash = sha256.digest(base64Ciphertext.getBytes(StandardCharsets.UTF_8));
+        return HexFormat.of().formatHex(hash);
     }
 }

@@ -1,5 +1,6 @@
-package com.demo.upimesh.model;
+package com.shaswatnaman.upimesh.repository;
 
+import com.shaswatnaman.upimesh.model.Transaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

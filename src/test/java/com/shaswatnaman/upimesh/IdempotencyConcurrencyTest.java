@@ -1,13 +1,13 @@
-package com.demo.upimesh;
+package com.shaswatnaman.upimesh;
 
-import com.demo.upimesh.crypto.HybridCryptoService;
-import com.demo.upimesh.crypto.ServerKeyHolder;
-import com.demo.upimesh.model.MeshPacket;
-import com.demo.upimesh.model.PaymentInstruction;
-import com.demo.upimesh.model.AccountRepository;
-import com.demo.upimesh.service.BridgeIngestionService;
-import com.demo.upimesh.service.DemoService;
-import com.demo.upimesh.service.IdempotencyService;
+import com.shaswatnaman.upimesh.crypto.HybridCryptoService;
+import com.shaswatnaman.upimesh.crypto.ServerKeyHolder;
+import com.shaswatnaman.upimesh.model.MeshPacket;
+import com.shaswatnaman.upimesh.model.PaymentInstruction;
+import com.shaswatnaman.upimesh.repository.AccountRepository;
+import com.shaswatnaman.upimesh.service.BridgeIngestionService;
+import com.shaswatnaman.upimesh.service.DemoService;
+import com.shaswatnaman.upimesh.service.IdempotencyService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,8 +20,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * The killer test: simulates the "three bridges deliver at the same instant"
- * scenario the user explicitly cared about.
+ * Covers the three headline properties of the system:
+ *   1. Concurrent duplicate delivery settles exactly once.
+ *   2. Tampered ciphertext is rejected before touching the ledger.
+ *   3. Encrypt/decrypt is symmetric and lossless.
  */
 @SpringBootTest
 class IdempotencyConcurrencyTest {
@@ -34,17 +36,15 @@ class IdempotencyConcurrencyTest {
     @Autowired private ServerKeyHolder serverKey;
 
     @BeforeEach
-    void clear() {
+    void clearIdempotencyCache() {
         idempotency.clear();
     }
 
     @Test
     void singlePacketDeliveredByThreeBridgesSettlesExactlyOnce() throws Exception {
-        // Capture starting balances
         BigDecimal aliceBefore = accounts.findById("alice@demo").orElseThrow().getBalance();
-        BigDecimal bobBefore = accounts.findById("bob@demo").orElseThrow().getBalance();
+        BigDecimal bobBefore   = accounts.findById("bob@demo").orElseThrow().getBalance();
 
-        // One packet, but we'll deliver it from 3 "bridges" simultaneously
         MeshPacket packet = demoService.createPacket(
                 "alice@demo", "bob@demo", new BigDecimal("100.00"), "1234", 5);
 
@@ -60,24 +60,27 @@ class IdempotencyConcurrencyTest {
                 try {
                     start.await();
                     BridgeIngestionService.IngestResult r = bridge.ingest(packet, node, 3);
-                    if ("SETTLED".equals(r.outcome())) settled.incrementAndGet();
+                    if ("SETTLED".equals(r.outcome()))          settled.incrementAndGet();
                     else if ("DUPLICATE_DROPPED".equals(r.outcome())) duplicates.incrementAndGet();
-                } catch (Exception e) { throw new RuntimeException(e); }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             });
         }
 
-        start.countDown(); // release all 3 threads at once
+        start.countDown(); // release all 3 threads simultaneously
         for (Future<?> f : futures) f.get(5, TimeUnit.SECONDS);
         pool.shutdown();
 
-        assertEquals(1, settled.get(), "exactly one bridge should settle");
+        assertEquals(1, settled.get(),    "exactly one bridge should settle");
         assertEquals(2, duplicates.get(), "the other two should be duplicates");
 
-        // Balance moved exactly once
         BigDecimal aliceAfter = accounts.findById("alice@demo").orElseThrow().getBalance();
-        BigDecimal bobAfter = accounts.findById("bob@demo").orElseThrow().getBalance();
-        assertEquals(aliceBefore.subtract(new BigDecimal("100.00")), aliceAfter);
-        assertEquals(bobBefore.add(new BigDecimal("100.00")), bobAfter);
+        BigDecimal bobAfter   = accounts.findById("bob@demo").orElseThrow().getBalance();
+        assertEquals(aliceBefore.subtract(new BigDecimal("100.00")), aliceAfter,
+                "Alice debited exactly once");
+        assertEquals(bobBefore.add(new BigDecimal("100.00")), bobAfter,
+                "Bob credited exactly once");
     }
 
     @Test
@@ -92,6 +95,7 @@ class IdempotencyConcurrencyTest {
 
         BridgeIngestionService.IngestResult r = bridge.ingest(packet, "bridge-x", 1);
         assertEquals("INVALID", r.outcome());
+        assertEquals("decryption_failed", r.reason());
     }
 
     @Test
@@ -103,9 +107,26 @@ class IdempotencyConcurrencyTest {
         String ct = crypto.encrypt(original, serverKey.getPublicKey());
         PaymentInstruction decrypted = crypto.decrypt(ct);
 
-        assertEquals(original.getSenderVpa(), decrypted.getSenderVpa());
+        assertEquals(original.getSenderVpa(),   decrypted.getSenderVpa());
         assertEquals(original.getReceiverVpa(), decrypted.getReceiverVpa());
         assertEquals(0, original.getAmount().compareTo(decrypted.getAmount()));
-        assertEquals(original.getNonce(), decrypted.getNonce());
+        assertEquals(original.getNonce(),       decrypted.getNonce());
+    }
+
+    @Test
+    void insufficientBalanceIsRejectedNotSettled() throws Exception {
+        // Dave has ₹500, trying to send ₹9999
+        MeshPacket packet = demoService.createPacket(
+                "dave@demo", "alice@demo", new BigDecimal("9999.00"), "1234", 5);
+
+        BridgeIngestionService.IngestResult r = bridge.ingest(packet, "bridge-y", 2);
+
+        assertEquals("INVALID", r.outcome());
+        assertEquals("insufficient_balance", r.reason());
+
+        // Dave's balance must be unchanged
+        BigDecimal daveBalance = accounts.findById("dave@demo").orElseThrow().getBalance();
+        assertEquals(0, new BigDecimal("500.00").compareTo(daveBalance),
+                "Dave's balance must be unchanged after rejection");
     }
 }

@@ -1,9 +1,15 @@
-package com.demo.upimesh.controller;
+package com.shaswatnaman.upimesh.controller;
 
-import com.demo.upimesh.crypto.ServerKeyHolder;
-import com.demo.upimesh.model.*;
-import com.demo.upimesh.service.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.shaswatnaman.upimesh.crypto.ServerKeyHolder;
+import com.shaswatnaman.upimesh.model.Account;
+import com.shaswatnaman.upimesh.model.MeshPacket;
+import com.shaswatnaman.upimesh.model.Transaction;
+import com.shaswatnaman.upimesh.repository.AccountRepository;
+import com.shaswatnaman.upimesh.repository.TransactionRepository;
+import com.shaswatnaman.upimesh.service.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,23 +19,36 @@ import java.util.*;
 /**
  * Public REST surface.
  *
- * The endpoints split into three groups:
- *   /api/server-key      → so simulated senders can fetch the server's public key
- *   /api/mesh/*          → simulator endpoints (inject, gossip, flush)
- *   /api/bridge/ingest   → THE real production endpoint a real bridge node would hit
+ * Endpoints split into three groups:
+ *   /api/server-key       → so simulated senders can fetch the server's public key
+ *   /api/mesh/*           → simulator endpoints (inject, gossip, flush, reset)
+ *   /api/bridge/ingest    → THE real production endpoint a real bridge node would hit
  *   /api/accounts, /api/transactions → for the dashboard
  */
 @RestController
 @RequestMapping("/api")
 public class ApiController {
 
-    @Autowired private ServerKeyHolder serverKey;
-    @Autowired private DemoService demo;
-    @Autowired private MeshSimulatorService mesh;
-    @Autowired private BridgeIngestionService bridge;
-    @Autowired private AccountRepository accountRepo;
-    @Autowired private TransactionRepository txRepo;
-    @Autowired private IdempotencyService idempotency;
+    private final ServerKeyHolder serverKey;
+    private final DemoService demo;
+    private final MeshSimulatorService mesh;
+    private final BridgeIngestionService bridge;
+    private final AccountRepository accountRepo;
+    private final TransactionRepository txRepo;
+    private final IdempotencyService idempotency;
+
+    public ApiController(ServerKeyHolder serverKey, DemoService demo,
+                         MeshSimulatorService mesh, BridgeIngestionService bridge,
+                         AccountRepository accountRepo, TransactionRepository txRepo,
+                         IdempotencyService idempotency) {
+        this.serverKey = serverKey;
+        this.demo = demo;
+        this.mesh = mesh;
+        this.bridge = bridge;
+        this.accountRepo = accountRepo;
+        this.txRepo = txRepo;
+        this.idempotency = idempotency;
+    }
 
     // ------------------------------------------------------------------ key
 
@@ -49,12 +68,12 @@ public class ApiController {
      * and inject it into the mesh at the given device.
      */
     @PostMapping("/demo/send")
-    public ResponseEntity<?> demoSend(@RequestBody DemoSendRequest req) throws Exception {
+    public ResponseEntity<?> demoSend(@Valid @RequestBody DemoSendRequest req) throws Exception {
         MeshPacket packet = demo.createPacket(
-                req.senderVpa, req.receiverVpa, req.amount, req.pin,
-                req.ttl == null ? 5 : req.ttl);
+                req.senderVpa(), req.receiverVpa(), req.amount(), req.pin(),
+                req.ttl() == null ? 5 : req.ttl());
 
-        String startDevice = req.startDevice == null ? "phone-alice" : req.startDevice;
+        String startDevice = req.startDevice() == null ? "phone-alice" : req.startDevice();
         mesh.inject(startDevice, packet);
 
         return ResponseEntity.ok(Map.of(
@@ -65,14 +84,13 @@ public class ApiController {
         ));
     }
 
-    public static class DemoSendRequest {
-        public String senderVpa;
-        public String receiverVpa;
-        public BigDecimal amount;
-        public String pin;
-        public Integer ttl;
-        public String startDevice;
-    }
+    public record DemoSendRequest(
+            @NotBlank String senderVpa,
+            @NotBlank String receiverVpa,
+            @DecimalMin("0.01") BigDecimal amount,
+            @NotBlank String pin,
+            Integer ttl,
+            String startDevice) {}
 
     // -------------------------------------------------------------- mesh sim
 
@@ -106,30 +124,24 @@ public class ApiController {
 
     /**
      * "All bridge nodes simultaneously walk outside and get 4G."
-     * They all upload everything they hold to /api/bridge/ingest.
-     *
-     * THIS is the moment the duplicate-storm idempotency case is tested:
-     * if multiple bridge nodes hold the same packet, the server gets multiple
-     * concurrent POSTs of the same ciphertext, and only one should settle.
+     * They upload everything they hold to /api/bridge/ingest in parallel —
+     * this is the concurrent duplicate-storm that idempotency is built to handle.
      */
     @PostMapping("/mesh/flush")
     public Map<String, Object> meshFlush() {
         List<MeshSimulatorService.BridgeUpload> uploads = mesh.collectBridgeUploads();
 
-        List<Map<String, Object>> results = new ArrayList<>();
-        // Upload them in parallel to actually exercise concurrent idempotency.
+        List<Map<String, Object>> results = Collections.synchronizedList(new ArrayList<>());
         uploads.parallelStream().forEach(up -> {
             BridgeIngestionService.IngestResult r =
                     bridge.ingest(up.packet(), up.bridgeNodeId(), 5 - up.packet().getTtl());
-            synchronized (results) {
-                results.add(Map.of(
-                        "bridgeNode", up.bridgeNodeId(),
-                        "packetId", up.packet().getPacketId().substring(0, 8),
-                        "outcome", r.outcome(),
-                        "reason", r.reason() == null ? "" : r.reason(),
-                        "transactionId", r.transactionId() == null ? -1 : r.transactionId()
-                ));
-            }
+            results.add(Map.of(
+                    "bridgeNode", up.bridgeNodeId(),
+                    "packetId", up.packet().getPacketId().substring(0, 8),
+                    "outcome", r.outcome(),
+                    "reason", r.reason() == null ? "" : r.reason(),
+                    "transactionId", r.transactionId() == null ? -1 : r.transactionId()
+            ));
         });
 
         return Map.of(
@@ -154,7 +166,7 @@ public class ApiController {
      */
     @PostMapping("/bridge/ingest")
     public ResponseEntity<?> ingest(
-            @RequestBody MeshPacket packet,
+            @Valid @RequestBody MeshPacket packet,
             @RequestHeader(value = "X-Bridge-Node-Id", defaultValue = "unknown") String bridgeNodeId,
             @RequestHeader(value = "X-Hop-Count", defaultValue = "0") int hopCount) {
 
@@ -162,7 +174,7 @@ public class ApiController {
         return ResponseEntity.ok(r);
     }
 
-    // ------------------------------------------------------------- accounts
+    // ------------------------------------------------------------- ledger
 
     @GetMapping("/accounts")
     public List<Account> listAccounts() {

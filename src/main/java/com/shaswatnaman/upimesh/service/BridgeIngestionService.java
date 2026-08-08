@@ -1,12 +1,11 @@
-package com.demo.upimesh.service;
+package com.shaswatnaman.upimesh.service;
 
-import com.demo.upimesh.crypto.HybridCryptoService;
-import com.demo.upimesh.model.MeshPacket;
-import com.demo.upimesh.model.PaymentInstruction;
-import com.demo.upimesh.model.Transaction;
+import com.shaswatnaman.upimesh.crypto.HybridCryptoService;
+import com.shaswatnaman.upimesh.model.MeshPacket;
+import com.shaswatnaman.upimesh.model.PaymentInstruction;
+import com.shaswatnaman.upimesh.model.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -29,12 +28,20 @@ public class BridgeIngestionService {
 
     private static final Logger log = LoggerFactory.getLogger(BridgeIngestionService.class);
 
-    @Autowired private HybridCryptoService crypto;
-    @Autowired private IdempotencyService idempotency;
-    @Autowired private SettlementService settlement;
+    private final HybridCryptoService crypto;
+    private final IdempotencyService idempotency;
+    private final SettlementService settlement;
 
     @Value("${upi.mesh.packet-max-age-seconds:86400}")
     private long maxAgeSeconds;
+
+    public BridgeIngestionService(HybridCryptoService crypto,
+                                  IdempotencyService idempotency,
+                                  SettlementService settlement) {
+        this.crypto = crypto;
+        this.idempotency = idempotency;
+        this.settlement = settlement;
+    }
 
     public IngestResult ingest(MeshPacket packet, String bridgeNodeId, int hopCount) {
         try {
@@ -42,8 +49,8 @@ public class BridgeIngestionService {
 
             // ---- Idempotency gate ----
             if (!idempotency.claim(packetHash)) {
-                log.info("DUPLICATE packet {} from bridge {} — dropped",
-                        packetHash.substring(0, 12) + "...", bridgeNodeId);
+                log.info("DUPLICATE packet {}... from bridge {} — dropped",
+                        packetHash.substring(0, 12), bridgeNodeId);
                 return IngestResult.duplicate(packetHash);
             }
 
@@ -52,24 +59,28 @@ public class BridgeIngestionService {
             try {
                 instruction = crypto.decrypt(packet.getCiphertext());
             } catch (Exception e) {
-                log.warn("Decryption failed for packet {}: {}",
-                        packetHash.substring(0, 12) + "...", e.getMessage());
+                log.warn("Decryption failed for packet {}...: {}",
+                        packetHash.substring(0, 12), e.getMessage());
                 return IngestResult.invalid(packetHash, "decryption_failed");
             }
 
             // ---- Freshness check (replay protection) ----
             long ageSeconds = (Instant.now().toEpochMilli() - instruction.getSignedAt()) / 1000;
             if (ageSeconds > maxAgeSeconds) {
-                log.warn("Packet {} too old ({}s), rejected",
-                        packetHash.substring(0, 12) + "...", ageSeconds);
+                log.warn("Packet {}... too old ({}s), rejected", packetHash.substring(0, 12), ageSeconds);
                 return IngestResult.invalid(packetHash, "stale_packet");
             }
-            if (ageSeconds < -300) { // small clock-skew tolerance
+            if (ageSeconds < -300) { // 5-minute clock-skew tolerance
                 return IngestResult.invalid(packetHash, "future_dated");
             }
 
             // ---- Settle ----
             Transaction tx = settlement.settle(instruction, packetHash, bridgeNodeId, hopCount);
+
+            // Distinguish SETTLED vs REJECTED (e.g. insufficient balance)
+            if (tx.getStatus() == Transaction.Status.REJECTED) {
+                return IngestResult.invalid(packetHash, "insufficient_balance");
+            }
             return IngestResult.settled(packetHash, tx);
 
         } catch (Exception e) {

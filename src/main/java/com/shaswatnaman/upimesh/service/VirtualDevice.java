@@ -1,6 +1,6 @@
-package com.demo.upimesh.service;
+package com.shaswatnaman.upimesh.service;
 
-import com.demo.upimesh.model.MeshPacket;
+import com.shaswatnaman.upimesh.model.MeshPacket;
 
 import java.util.Collection;
 import java.util.Map;
