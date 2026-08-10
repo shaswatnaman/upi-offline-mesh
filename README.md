@@ -1,4 +1,4 @@
-# UPI Offline Mesh
+# MeshPay
 
 [![Build & Test](https://github.com/shaswatnaman/upi-offline-mesh/actions/workflows/ci.yml/badge.svg)](https://github.com/shaswatnaman/upi-offline-mesh/actions/workflows/ci.yml)
 [![Java 17](https://img.shields.io/badge/Java-17-blue)](https://adoptium.net/)
