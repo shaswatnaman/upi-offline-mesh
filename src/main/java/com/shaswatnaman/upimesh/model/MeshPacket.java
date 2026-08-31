@@ -2,7 +2,6 @@ package com.shaswatnaman.upimesh.model;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -31,7 +30,7 @@ public class MeshPacket {
     @Min(0)
     private int ttl; // Hops remaining; intermediates decrement it
 
-    @NotNull
+    @Min(0)
     private long createdAt; // epoch millis, when sender created the packet
 
     @NotBlank
