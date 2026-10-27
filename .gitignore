@@ -29,3 +29,6 @@ Thumbs.db
 *.env
 application-local.properties
 application-secret.properties
+
+# Runtime files written by the app (CSV exports, audit log)
+data/
