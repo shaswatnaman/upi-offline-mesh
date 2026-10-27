@@ -1,12 +1,9 @@
 services:
   - type: web
     name: upi-offline-mesh
-    runtime: java
+    runtime: docker
     plan: free
-    branch: feature/jdbc-mysql-files-servlets
-
-    buildCommand: "./mvnw package -DskipTests --no-transfer-progress"
-    startCommand: "java -jar target/upi-offline-mesh-1.0.0.jar"
+    branch: main
 
     envVars:
       - key: SPRING_PROFILES_ACTIVE
