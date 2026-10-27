@@ -28,7 +28,7 @@ body{font-family:-apple-system,'Inter',sans-serif;background:var(--bg);color:var
 /* ── CANVAS ── */
 .canvas-outer{overflow-x:auto;border-bottom:1px solid var(--border);}
 #canvas{
-  position:relative;width:1320px;height:620px;
+  position:relative;width:1320px;height:720px;
   background:#060810;overflow:hidden;
 }
 #canvas::before{
@@ -56,8 +56,14 @@ body{font-family:-apple-system,'Inter',sans-serif;background:var(--bg);color:var
 /* ── PHONE ── */
 .phone{
   position:absolute;width:82px;height:138px;
-  background:#07101e;border:1.5px solid #1e2d45;border-radius:20px;
+  background:#07101e;border:2px solid #2a4060;border-radius:20px;
   display:flex;flex-direction:column;overflow:visible;z-index:10;
+  box-shadow:0 0 22px rgba(30,55,120,.25);
+}
+.ph-devname{
+  position:absolute;bottom:-19px;left:50%;transform:translateX(-50%);
+  font-size:8.5px;font-weight:700;color:#3a5878;white-space:nowrap;letter-spacing:.3px;
+  text-shadow:0 0 8px rgba(59,130,246,.2);
 }
 .phone-inner{display:flex;flex-direction:column;height:100%;overflow:hidden;border-radius:20px;}
 .phone.bridge-node{border-color:rgba(34,197,94,.6);box-shadow:0 0 32px rgba(34,197,94,.2),inset 0 1px 0 rgba(34,197,94,.1);}
@@ -255,25 +261,25 @@ tr:hover td{background:rgba(255,255,255,.012);}
     </linearGradient>
   </defs>
 
-  <!-- Mesh connection lines (base) -->
-  <line id="cl-ba"  class="conn mesh-line" x1="621" y1="233" x2="191" y2="422"/>
-  <line id="cl-bs1" class="conn mesh-line" x1="655" y1="240" x2="491" y2="490"/>
-  <line id="cl-bs2" class="conn mesh-line" x1="700" y1="240" x2="831" y2="490"/>
-  <line id="cl-bs3" class="conn mesh-line" x1="721" y1="230" x2="1101" y2="420"/>
-  <line id="cl-as1" class="conn mesh-line" x1="232" y1="468" x2="491" y2="498"/>
-  <line id="cl-12"  class="conn mesh-line" x1="573" y1="490" x2="831" y2="490"/>
-  <line id="cl-23"  class="conn mesh-line" x1="913" y1="470" x2="1101" y2="428"/>
-  <line id="cl-a2"  class="conn mesh-line" x1="232" y1="450" x2="831" y2="480" stroke-dasharray="5 4" stroke-opacity=".4"/>
+  <!-- Mesh connection lines (base) — endpoints are phone centers -->
+  <line id="cl-ba"  class="conn mesh-line" x1="660" y1="264" x2="191" y2="489"/>
+  <line id="cl-bs1" class="conn mesh-line" x1="660" y1="264" x2="491" y2="579"/>
+  <line id="cl-bs2" class="conn mesh-line" x1="660" y1="264" x2="831" y2="579"/>
+  <line id="cl-bs3" class="conn mesh-line" x1="660" y1="264" x2="1101" y2="489"/>
+  <line id="cl-as1" class="conn mesh-line" x1="191" y1="489" x2="491" y2="579"/>
+  <line id="cl-12"  class="conn mesh-line" x1="491" y1="579" x2="831" y2="579"/>
+  <line id="cl-23"  class="conn mesh-line" x1="831" y1="579" x2="1101" y2="489"/>
+  <line id="cl-a2"  class="conn mesh-line" x1="191" y1="489" x2="831" y2="579" stroke-dasharray="5 4" stroke-opacity=".4"/>
 
   <!-- Active glow lines (JavaScript sets opacity when animating) -->
-  <line id="al-ba"  class="conn mesh-active" filter="url(#glow-line)" x1="621" y1="233" x2="191" y2="422"/>
-  <line id="al-bs1" class="conn mesh-active" filter="url(#glow-line)" x1="655" y1="240" x2="491" y2="490"/>
-  <line id="al-bs2" class="conn mesh-active" filter="url(#glow-line)" x1="700" y1="240" x2="831" y2="490"/>
-  <line id="al-bs3" class="conn mesh-active" filter="url(#glow-line)" x1="721" y1="230" x2="1101" y2="420"/>
-  <line id="al-as1" class="conn mesh-active" filter="url(#glow-line)" stroke="var(--cyan)"   x1="232" y1="468" x2="491" y2="498"/>
-  <line id="al-12"  class="conn mesh-active" filter="url(#glow-line)" stroke="var(--cyan)"   x1="573" y1="490" x2="831" y2="490"/>
-  <line id="al-23"  class="conn mesh-active" filter="url(#glow-line)" stroke="var(--cyan)"   x1="913" y1="470" x2="1101" y2="428"/>
-  <line id="al-a2"  class="conn mesh-active" filter="url(#glow-line)" stroke="var(--purple)" x1="232" y1="450" x2="831" y2="480"/>
+  <line id="al-ba"  class="conn mesh-active" filter="url(#glow-line)" x1="660" y1="264" x2="191" y2="489"/>
+  <line id="al-bs1" class="conn mesh-active" filter="url(#glow-line)" x1="660" y1="264" x2="491" y2="579"/>
+  <line id="al-bs2" class="conn mesh-active" filter="url(#glow-line)" x1="660" y1="264" x2="831" y2="579"/>
+  <line id="al-bs3" class="conn mesh-active" filter="url(#glow-line)" x1="660" y1="264" x2="1101" y2="489"/>
+  <line id="al-as1" class="conn mesh-active" filter="url(#glow-line)" stroke="var(--cyan)"   x1="191" y1="489" x2="491" y2="579"/>
+  <line id="al-12"  class="conn mesh-active" filter="url(#glow-line)" stroke="var(--cyan)"   x1="491" y1="579" x2="831" y2="579"/>
+  <line id="al-23"  class="conn mesh-active" filter="url(#glow-line)" stroke="var(--cyan)"   x1="831" y1="579" x2="1101" y2="489"/>
+  <line id="al-a2"  class="conn mesh-active" filter="url(#glow-line)" stroke="var(--purple)" x1="191" y1="489" x2="831" y2="579"/>
 
   <!-- Internet line base -->
   <line class="conn inet-line" x1="660" y1="95" x2="660" y2="195"/>
@@ -292,7 +298,7 @@ tr:hover td{background:rgba(255,255,255,.012);}
   <text font-size="8" fill="#182540" font-family="-apple-system,sans-serif" font-weight="700">
     <textPath href="#lp-mesh" startOffset="18%">BT / WiFi-Direct mesh</textPath>
   </text>
-  <path id="lp-mesh" d="M232,450 L831,480" fill="none"/>
+  <path id="lp-mesh" d="M232,489 L831,579" fill="none"/>
 </svg>
 
 <!-- SERVER -->
@@ -314,10 +320,11 @@ tr:hover td{background:rgba(255,255,255,.012);}
     </div>
     <div class="ph-home"></div>
   </div>
+  <div class="ph-devname" style="color:#22c55e;text-shadow:0 0 10px rgba(34,197,94,.4)">phone-bridge</div>
 </div>
 
 <!-- ALICE -->
-<div class="phone" id="node-phone-alice" style="left:150px;top:375px;">
+<div class="phone" id="node-phone-alice" style="left:150px;top:420px;">
   <div class="phone-inner">
     <div class="ph-notch"></div>
     <div class="ph-screen">
@@ -328,10 +335,11 @@ tr:hover td{background:rgba(255,255,255,.012);}
     </div>
     <div class="ph-home"></div>
   </div>
+  <div class="ph-devname">phone-alice</div>
 </div>
 
 <!-- STRANGER-1 -->
-<div class="phone" id="node-phone-stranger1" style="left:450px;top:455px;">
+<div class="phone" id="node-phone-stranger1" style="left:450px;top:510px;">
   <div class="phone-inner">
     <div class="ph-notch"></div>
     <div class="ph-screen">
@@ -342,10 +350,11 @@ tr:hover td{background:rgba(255,255,255,.012);}
     </div>
     <div class="ph-home"></div>
   </div>
+  <div class="ph-devname">stranger-1</div>
 </div>
 
 <!-- STRANGER-2 -->
-<div class="phone" id="node-phone-stranger2" style="left:790px;top:455px;">
+<div class="phone" id="node-phone-stranger2" style="left:790px;top:510px;">
   <div class="phone-inner">
     <div class="ph-notch"></div>
     <div class="ph-screen">
@@ -356,10 +365,11 @@ tr:hover td{background:rgba(255,255,255,.012);}
     </div>
     <div class="ph-home"></div>
   </div>
+  <div class="ph-devname">stranger-2</div>
 </div>
 
 <!-- STRANGER-3 -->
-<div class="phone" id="node-phone-stranger3" style="left:1060px;top:375px;">
+<div class="phone" id="node-phone-stranger3" style="left:1060px;top:420px;">
   <div class="phone-inner">
     <div class="ph-notch"></div>
     <div class="ph-screen">
@@ -370,6 +380,7 @@ tr:hover td{background:rgba(255,255,255,.012);}
     </div>
     <div class="ph-home"></div>
   </div>
+  <div class="ph-devname">stranger-3</div>
 </div>
 
 <!-- Animated SVG layer -->
@@ -517,10 +528,10 @@ tr:hover td{background:rgba(255,255,255,.012);}
 const N = {
   server:           {x:660, y:65},
   'phone-bridge':   {x:660, y:264},
-  'phone-alice':    {x:191, y:444},
-  'phone-stranger1':{x:491, y:524},
-  'phone-stranger2':{x:831, y:524},
-  'phone-stranger3':{x:1101,y:444},
+  'phone-alice':    {x:191, y:489},
+  'phone-stranger1':{x:491, y:579},
+  'phone-stranger2':{x:831, y:579},
+  'phone-stranger3':{x:1101,y:489},
 };
 
 /* Line IDs: [base, active-glow] */
