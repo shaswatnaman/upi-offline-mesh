@@ -1,241 +1,739 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>UPI Offline Mesh — Demo</title>
-    <style>
-        * { box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            margin: 0; padding: 24px; background: #0d1117; color: #e6edf3;
-        }
-        h1 { margin-top: 0; color: #f0f6fc; }
-        h2 { color: #58a6ff; border-bottom: 1px solid #30363d; padding-bottom: 4px; margin-top: 32px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .grid { display: grid; gap: 16px; }
-        .grid-2 { grid-template-columns: 1fr 1fr; }
-        .grid-3 { grid-template-columns: repeat(3, 1fr); }
-        .card {
-            background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px;
-        }
-        .device {
-            border: 1px solid #30363d; border-radius: 6px; padding: 12px; margin-bottom: 8px;
-            background: #0d1117;
-        }
-        .device.bridge { border-color: #2ea043; background: #052e16; }
-        .device.offline { opacity: 0.85; }
-        .badge {
-            display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px;
-            font-weight: 600; margin-left: 8px;
-        }
-        .badge-online { background: #2ea043; color: white; }
-        .badge-offline { background: #6e7681; color: white; }
-        .packet-id {
-            font-family: 'Consolas', 'Monaco', monospace; font-size: 11px;
-            background: #21262d; padding: 2px 6px; border-radius: 3px; margin: 2px;
-            display: inline-block;
-        }
-        button {
-            background: #238636; color: white; border: none; padding: 8px 16px;
-            border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;
-            margin: 4px;
-        }
-        button:hover { background: #2ea043; }
-        button.danger { background: #da3633; }
-        button.danger:hover { background: #f85149; }
-        button.secondary { background: #1f6feb; }
-        button.secondary:hover { background: #388bfd; }
-        input, select {
-            background: #0d1117; color: #e6edf3; border: 1px solid #30363d;
-            border-radius: 4px; padding: 6px 10px; font-size: 14px; margin: 4px;
-        }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #30363d; }
-        th { color: #8b949e; font-weight: 600; font-size: 12px; text-transform: uppercase; }
-        .status-SETTLED { color: #56d364; font-weight: 600; }
-        .status-REJECTED { color: #f85149; font-weight: 600; }
-        .status-DUPLICATE_DROPPED { color: #d29922; font-weight: 600; }
-        .status-INVALID { color: #f85149; font-weight: 600; }
-        #log {
-            background: #010409; color: #7ee787; padding: 12px; border-radius: 6px;
-            font-family: 'Consolas', 'Monaco', monospace; font-size: 12px;
-            max-height: 220px; overflow-y: auto; white-space: pre-wrap;
-            border: 1px solid #30363d;
-        }
-        .controls { background: #161b22; padding: 16px; border-radius: 8px;
-                    border: 1px solid #30363d; margin-bottom: 16px; }
-        .step-num {
-            display: inline-block; background: #58a6ff; color: white;
-            border-radius: 50%; width: 24px; height: 24px; text-align: center;
-            line-height: 24px; font-weight: 600; margin-right: 8px;
-        }
-        .balance { font-family: 'Consolas', monospace; color: #56d364; font-weight: 600; }
-        .small { font-size: 12px; color: #8b949e; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MeshPay — UPI Offline Demo</title>
+<style>
+:root {
+  --bg:       #080c14;
+  --surface:  #0e1420;
+  --surface2: #141b27;
+  --border:   #1e2d45;
+  --accent:   #3b82f6;
+  --accent2:  #06b6d4;
+  --green:    #22c55e;
+  --red:      #ef4444;
+  --yellow:   #f59e0b;
+  --text:     #e2e8f0;
+  --muted:    #64748b;
+  --mono:     'JetBrains Mono', 'Fira Code', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+       background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── HERO ── */
+.hero {
+  background: linear-gradient(135deg, #0a1628 0%, #0e1f3d 50%, #081420 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 36px 32px 28px;
+}
+.hero h1 { font-size: 28px; font-weight: 700; color: #f1f5f9;
+           letter-spacing: -0.5px; }
+.hero h1 span { color: var(--accent); }
+.hero p  { margin-top: 8px; color: var(--muted); font-size: 14px; max-width: 680px; line-height: 1.6; }
+.tag { display: inline-block; background: rgba(59,130,246,.15); color: var(--accent);
+       border: 1px solid rgba(59,130,246,.3); border-radius: 20px;
+       font-size: 11px; font-weight: 600; padding: 2px 10px; margin: 0 3px 6px; letter-spacing:.3px; }
+
+/* ── LAYOUT ── */
+.main { max-width: 1280px; margin: 0 auto; padding: 24px 24px 48px; }
+
+/* ── FLOW DIAGRAM ── */
+.flow-section { margin-bottom: 28px; }
+.flow-section h2 { font-size: 13px; font-weight: 600; text-transform: uppercase;
+                   letter-spacing: 1px; color: var(--muted); margin-bottom: 14px; }
+.flow-diagram {
+  display: flex; align-items: center; gap: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px 24px; overflow-x: auto;
+}
+.flow-node {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  min-width: 90px; flex-shrink: 0;
+}
+.flow-node .icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; border: 1px solid var(--border);
+  background: var(--surface2); position: relative;
+}
+.flow-node .icon.active { border-color: var(--accent); background: rgba(59,130,246,.1);
+                          box-shadow: 0 0 16px rgba(59,130,246,.2); }
+.flow-node .icon.green  { border-color: var(--green);  background: rgba(34,197,94,.1); }
+.flow-node .icon.cyan   { border-color: var(--accent2); background: rgba(6,182,212,.1); }
+.flow-node label { font-size: 11px; color: var(--muted); text-align: center; line-height: 1.3; }
+.flow-node label b { color: var(--text); display: block; font-size: 12px; }
+.flow-arrow {
+  flex: 1; min-width: 32px; display: flex; align-items: center;
+  color: var(--border); font-size: 18px; justify-content: center;
+  position: relative;
+}
+.flow-arrow.animated::after {
+  content: ''; position: absolute; left: 0; top: 50%;
+  height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: flowPulse 1.5s infinite; width: 100%;
+}
+@keyframes flowPulse { 0%,100%{opacity:.3} 50%{opacity:1} }
+.pulse-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--green);
+  animation: pulseDot 1.5s infinite;
+}
+@keyframes pulseDot { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.4);opacity:.7} }
+
+/* ── GRID ── */
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+@media(max-width:900px){.grid-3,.grid-2{grid-template-columns:1fr;}}
+
+/* ── CARDS ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px; position: relative; overflow: hidden;
+}
+.card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  opacity: 0;
+}
+.card.active::before { opacity: 1; }
+.card h3 { font-size: 13px; font-weight: 600; text-transform: uppercase;
+           letter-spacing: .8px; color: var(--muted); margin-bottom: 14px; }
+.card h3 .ico { margin-right: 6px; }
+
+/* ── STEP CARDS ── */
+.step-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 8px; font-weight: 700; font-size: 14px;
+  background: var(--accent); color: white; margin-right: 8px; flex-shrink: 0;
+}
+.step-header { display: flex; align-items: center; margin-bottom: 8px; }
+.step-header strong { font-size: 15px; color: var(--text); }
+.step-desc { font-size: 12px; color: var(--muted); margin-bottom: 14px;
+             line-height: 1.6; padding-left: 36px; }
+
+/* ── FORM CONTROLS ── */
+select, input[type=number], input[type=text] {
+  background: var(--bg); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 12px; font-size: 13px; outline: none;
+  transition: border-color .2s;
+}
+select:focus, input:focus { border-color: var(--accent); }
+.form-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.form-row .sep { color: var(--muted); font-size: 18px; }
+.label-sm { font-size: 11px; color: var(--muted); margin-right: 4px; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 18px; border-radius: 8px; border: none; cursor: pointer;
+  font-size: 13px; font-weight: 600; letter-spacing: .2px; transition: all .15s;
+  white-space: nowrap;
+}
+.btn:active { transform: scale(.97); }
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: #2563eb; }
+.btn-cyan    { background: var(--accent2); color: #082f49; }
+.btn-cyan:hover { background: #0891b2; color: white; }
+.btn-green   { background: var(--green); color: #052e16; }
+.btn-green:hover { background: #16a34a; color: white; }
+.btn-danger  { background: rgba(239,68,68,.15); color: var(--red);
+               border: 1px solid rgba(239,68,68,.3); }
+.btn-danger:hover { background: var(--red); color: white; }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── EXPLAINER CALLOUT ── */
+.explainer {
+  background: rgba(59,130,246,.07); border: 1px solid rgba(59,130,246,.2);
+  border-radius: 8px; padding: 10px 14px; margin-top: 12px;
+  font-size: 12px; color: #93c5fd; line-height: 1.6; display: none;
+}
+.explainer.show { display: block; animation: fadeIn .3s; }
+.explainer strong { color: var(--accent2); }
+@keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── DEVICES ── */
+.device-list { display: flex; flex-direction: column; gap: 8px; }
+.device {
+  display: flex; align-items: center; gap: 10px;
+  border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px;
+  background: var(--bg); transition: all .3s;
+}
+.device.bridge { border-color: rgba(34,197,94,.4); background: rgba(34,197,94,.04); }
+.device.offline { opacity: .8; }
+.device .dev-icon { font-size: 20px; }
+.device .dev-name { font-weight: 600; font-size: 13px; flex: 1; }
+.device .dev-meta { font-size: 11px; color: var(--muted); }
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px;
+  letter-spacing: .4px;
+}
+.badge-4g   { background: rgba(34,197,94,.15); color: var(--green);
+              border: 1px solid rgba(34,197,94,.3); }
+.badge-off  { background: rgba(100,116,139,.1);  color: var(--muted);
+              border: 1px solid rgba(100,116,139,.2); }
+.packets { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.pkt { font-family: var(--mono); font-size: 10px; background: rgba(59,130,246,.12);
+       color: var(--accent); border: 1px solid rgba(59,130,246,.2);
+       padding: 2px 7px; border-radius: 4px; }
+
+/* ── TABLES ── */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 8px 10px; color: var(--muted);
+     font-size: 11px; font-weight: 600; text-transform: uppercase;
+     letter-spacing: .5px; border-bottom: 1px solid var(--border); }
+td { padding: 9px 10px; border-bottom: 1px solid rgba(30,45,69,.5);
+     vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,.02); }
+.balance { font-family: var(--mono); color: var(--green); font-weight: 600; }
+.status-SETTLED           { color: var(--green); font-weight: 600; font-size: 11px; }
+.status-DUPLICATE_DROPPED { color: var(--yellow); font-weight: 600; font-size: 11px; }
+.status-REJECTED, .status-INVALID { color: var(--red); font-weight: 600; font-size: 11px; }
+.mono { font-family: var(--mono); font-size: 11px; }
+
+/* ── LOG ── */
+#log {
+  background: #020609; color: #4ade80; font-family: var(--mono); font-size: 11.5px;
+  border: 1px solid var(--border); border-radius: 8px; padding: 14px;
+  max-height: 200px; overflow-y: auto; line-height: 1.7;
+  white-space: pre-wrap; word-break: break-all;
+}
+#log .log-ts  { color: var(--muted); }
+#log .log-ok  { color: #4ade80; }
+#log .log-dup { color: var(--yellow); }
+#log .log-err { color: var(--red); }
+#log .log-info{ color: var(--accent2); }
+
+/* ── STAT TILES ── */
+.stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 10px; }
+.stat { background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+        padding: 12px 14px; text-align: center; }
+.stat .val { font-size: 22px; font-weight: 700; color: var(--text); font-family: var(--mono); }
+.stat .lbl { font-size: 10px; color: var(--muted); text-transform: uppercase;
+             letter-spacing: .5px; margin-top: 2px; }
+
+/* ── CONCEPT PILLS ── */
+.concept-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.concept {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 12px; font-size: 11px; color: var(--muted);
+  cursor: default;
+}
+.concept b { color: var(--text); font-size: 12px; }
+.concept .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── TABS ── */
+.tabs { display: flex; gap: 2px; margin-bottom: 14px;
+        background: var(--bg); border: 1px solid var(--border);
+        border-radius: 8px; padding: 3px; }
+.tab { flex: 1; text-align: center; padding: 6px 8px; border-radius: 6px;
+       font-size: 12px; font-weight: 600; cursor: pointer; color: var(--muted);
+       transition: all .15s; border: none; background: none; }
+.tab.active { background: var(--surface2); color: var(--text); }
+
+/* ── MISC ── */
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+.empty { text-align: center; color: var(--muted); font-size: 13px; padding: 24px; }
+.chip { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 4px;
+        font-weight: 600; background: rgba(59,130,246,.1); color: var(--accent); }
+.spinning { animation: spin 1s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
 </head>
 <body>
-<div class="container">
-    <h1>📡 UPI Offline Mesh — Live Demo</h1>
-    <p class="small">
-        Send money in a basement with zero internet. Encrypted packets gossip from phone to phone
-        until one with 4G reaches the backend.
-    </p>
 
-    <div class="controls">
-        <h3 style="margin-top:0">🎬 Demo Flow</h3>
-
-        <div>
-            <span class="step-num">1</span><strong>Compose payment</strong> (simulates sender phone)
-            <br>
-            <select id="senderVpa">
-                <option>alice@demo</option>
-                <option>bob@demo</option>
-                <option>carol@demo</option>
-            </select>
-            →
-            <select id="receiverVpa">
-                <option>bob@demo</option>
-                <option>carol@demo</option>
-                <option>alice@demo</option>
-                <option>dave@demo</option>
-            </select>
-            ₹<input type="number" id="amount" value="500" style="width: 100px">
-            PIN <input type="text" id="pin" value="1234" style="width: 80px" maxlength="4">
-            <button onclick="sendPacket()">📤 Inject into Mesh</button>
-        </div>
-
-        <div style="margin-top: 16px">
-            <span class="step-num">2</span><strong>Gossip</strong> — packets hop device-to-device
-            <button class="secondary" onclick="gossip()">🔄 Run Gossip Round</button>
-        </div>
-
-        <div style="margin-top: 16px">
-            <span class="step-num">3</span><strong>Bridge node walks outside, hits 4G</strong>
-            <button class="secondary" onclick="flushBridges()">📡 Bridges Upload to Backend</button>
-            <span class="small">(parallel — exercises idempotency)</span>
-        </div>
-
-        <div style="margin-top: 16px">
-            <button class="danger" onclick="resetMesh()">🗑 Reset Mesh + Cache</button>
-        </div>
-    </div>
-
-    <div class="grid grid-2">
-        <div class="card">
-            <h2>📱 Mesh Devices</h2>
-            <div id="devices"></div>
-        </div>
-
-        <div class="card">
-            <h2>🏦 Account Balances</h2>
-            <table id="accounts-table">
-                <thead><tr><th>VPA</th><th>Holder</th><th>Balance</th></tr></thead>
-                <tbody></tbody>
-            </table>
-            <p class="small" id="cacheInfo"></p>
-        </div>
-    </div>
-
-    <div class="card" style="margin-top: 16px">
-        <h2>📜 Transaction Ledger</h2>
-        <table id="tx-table">
-            <thead><tr>
-                <th>ID</th><th>From</th><th>To</th><th>Amount</th>
-                <th>Status</th><th>Bridge</th><th>Hops</th><th>Settled</th>
-            </tr></thead>
-            <tbody></tbody>
-        </table>
-    </div>
-
-    <div class="card" style="margin-top: 16px">
-        <h2>🪵 Activity Log</h2>
-        <div id="log"></div>
-    </div>
+<!-- ═══════════════════════ HERO ═══════════════════════ -->
+<div class="hero">
+  <h1>📡 <span>MeshPay</span> — UPI Offline Mesh</h1>
+  <p>
+    Send money with <strong>zero internet</strong>. Payment packets are encrypted on the sender's
+    phone and gossip from device to device over Bluetooth/WiFi-Direct until a bridge node
+    with 4G reaches the backend and settles the transaction.
+  </p>
+  <div style="margin-top:12px">
+    <span class="tag">RSA-2048 + AES-256-GCM</span>
+    <span class="tag">Gossip Protocol</span>
+    <span class="tag">Idempotent Settlement</span>
+    <span class="tag">JDBC + MySQL</span>
+    <span class="tag">Custom Servlets</span>
+  </div>
 </div>
 
-<script>
-function log(msg) {
-    const el = document.getElementById('log');
-    el.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg + '\n' + el.textContent;
-}
+<div class="main">
 
-async function refresh() {
-    // Mesh state
-    const m = await fetch('/api/mesh/state').then(r => r.json());
-    const devicesDiv = document.getElementById('devices');
-    devicesDiv.innerHTML = m.devices.map(d => `
-        <div class="device ${d.hasInternet ? 'bridge' : 'offline'}">
-            <strong>${d.deviceId}</strong>
-            <span class="badge ${d.hasInternet ? 'badge-online' : 'badge-offline'}">
-                ${d.hasInternet ? '🌐 4G' : '🚫 OFFLINE'}
-            </span>
-            <span class="small">holding ${d.packetCount} packet(s)</span>
-            <div>${d.packetIds.map(id => `<span class="packet-id">${id}</span>`).join('')}</div>
+  <!-- ═══════════════════════ FLOW DIAGRAM ═══════════════════════ -->
+  <div class="flow-section">
+    <h2>How it works</h2>
+    <div class="flow-diagram">
+
+      <div class="flow-node">
+        <div class="icon active">📱</div>
+        <label><b>Sender Phone</b>Offline — no 4G</label>
+      </div>
+      <div class="flow-arrow animated"></div>
+
+      <div class="flow-node">
+        <div class="icon">🔐</div>
+        <label><b>Encrypt Packet</b>RSA-OAEP wraps AES key</label>
+      </div>
+      <div class="flow-arrow">→</div>
+
+      <div class="flow-node">
+        <div class="icon">📲</div>
+        <label><b>Inject to Mesh</b>BT / WiFi-Direct</label>
+      </div>
+      <div class="flow-arrow animated"></div>
+
+      <div class="flow-node">
+        <div class="icon">🔄</div>
+        <label><b>Gossip Hops</b>Phone → Phone</label>
+      </div>
+      <div class="flow-arrow animated"></div>
+
+      <div class="flow-node">
+        <div class="icon cyan">📡</div>
+        <label><b>Bridge Node</b>Gets 4G signal</label>
+      </div>
+      <div class="flow-arrow animated"></div>
+
+      <div class="flow-node">
+        <div class="icon">☁️</div>
+        <label><b>Backend</b>Decrypt + Verify</label>
+      </div>
+      <div class="flow-arrow">→</div>
+
+      <div class="flow-node">
+        <div class="icon green">✅</div>
+        <label><b>Settled</b>DB updated</label>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ CONCEPTS ═══════════════════════ -->
+  <div class="concept-row" style="margin-bottom:24px">
+    <div class="concept">
+      <span class="dot" style="background:#3b82f6"></span>
+      <div><b>Hybrid Encryption</b> — Server RSA public key encrypts a random AES session key. Only the server private key can decrypt the payment.</div>
+    </div>
+    <div class="concept">
+      <span class="dot" style="background:#22c55e"></span>
+      <div><b>Gossip Protocol</b> — Each phone forwards packets to neighbours until TTL reaches 0 or a bridge delivers it.</div>
+    </div>
+    <div class="concept">
+      <span class="dot" style="background:#f59e0b"></span>
+      <div><b>Idempotency</b> — Multiple bridge nodes may upload the same packet. The backend deduplicates using a packet hash.</div>
+    </div>
+    <div class="concept">
+      <span class="dot" style="background:#06b6d4"></span>
+      <div><b>Plain JDBC DAO</b> — LedgerJdbcDao uses raw <code style="font-size:11px">PreparedStatement</code>s (not JPA) for audit queries.</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ DEMO STEPS ═══════════════════════ -->
+  <div class="grid-3" style="margin-bottom:16px">
+
+    <!-- STEP 1 -->
+    <div class="card" id="card1">
+      <div class="step-header">
+        <span class="step-badge">1</span>
+        <strong>Compose Payment</strong>
+      </div>
+      <p class="step-desc">
+        Simulates the <em>sender's phone</em>. Fetches the server's RSA public key,
+        generates a random AES-256 session key, encrypts the payment, and packs it
+        into a <code style="font-size:11px">MeshPacket</code>.
+      </p>
+      <div class="form-row">
+        <select id="senderVpa" onchange="validateSender()">
+          <option>alice@demo</option>
+          <option>bob@demo</option>
+          <option>carol@demo</option>
+          <option>dave@demo</option>
+        </select>
+        <span class="sep">→</span>
+        <select id="receiverVpa">
+          <option>bob@demo</option>
+          <option>carol@demo</option>
+          <option>alice@demo</option>
+          <option>dave@demo</option>
+        </select>
+      </div>
+      <div class="form-row" style="margin-top:8px">
+        <span class="label-sm">₹</span>
+        <input type="number" id="amount" value="500" style="width:90px">
+        <span class="label-sm">PIN</span>
+        <input type="text" id="pin" value="1234" style="width:70px" maxlength="4">
+      </div>
+      <div style="margin-top:14px">
+        <button class="btn btn-primary" onclick="sendPacket()" id="btnSend">
+          🔐 Encrypt &amp; Inject
+        </button>
+      </div>
+      <div class="explainer" id="exp1">
+        <strong>What happened:</strong> A random AES-256-GCM key was generated in-memory.
+        The payment data was encrypted with it. The AES key itself was then wrapped
+        with the server's <strong>RSA-2048 OAEP</strong> public key. Only the server
+        can unwrap the AES key to read the payment. The packet was placed on
+        <code>phone-alice</code> in the mesh.
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="card" id="card2">
+      <div class="step-header">
+        <span class="step-badge" style="background:var(--accent2)">2</span>
+        <strong>Run Gossip Round</strong>
+      </div>
+      <p class="step-desc">
+        Each offline phone forwards packets to its neighbours (random selection).
+        TTL decrements each hop. Run multiple rounds to spread packets across
+        the mesh — like epidemic broadcast.
+      </p>
+      <div class="stats" id="gossipStats" style="display:none">
+        <div class="stat"><div class="val" id="gTransfers">–</div><div class="lbl">Transfers</div></div>
+        <div class="stat"><div class="val" id="gDevices">–</div><div class="lbl">Devices hold</div></div>
+        <div class="stat"><div class="val" id="gPackets">–</div><div class="lbl">Packets live</div></div>
+      </div>
+      <div style="margin-top:14px">
+        <button class="btn btn-cyan" onclick="gossip()" id="btnGossip">
+          🔄 Run Gossip Round
+        </button>
+      </div>
+      <div class="explainer" id="exp2">
+        <strong>What happened:</strong> The simulator picked a random neighbour for each
+        device and transferred packets that the neighbour didn't already hold.
+        <code>TTL</code> decremented. When TTL hits 0, the packet can't hop further
+        — it must be uploaded by whichever device holds it.
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="card" id="card3">
+      <div class="step-header">
+        <span class="step-badge" style="background:var(--green)">3</span>
+        <strong>Bridge Uploads to Backend</strong>
+      </div>
+      <p class="step-desc">
+        The bridge node(s) get 4G and simultaneously POST all held packets to
+        <code style="font-size:11px">/api/bridge/ingest</code>. Parallel uploads test
+        <strong>idempotency</strong> — duplicates are detected by packet hash and dropped.
+      </p>
+      <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap">
+        <button class="btn btn-green" onclick="flushBridges()" id="btnFlush">
+          📡 Bridge Upload
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="resetMesh()" id="btnReset">
+          🗑 Reset Mesh
+        </button>
+      </div>
+      <div class="explainer" id="exp3">
+        <strong>What happened:</strong> Bridge nodes uploaded packets in <strong>parallel</strong>
+        (using Java's <code>parallelStream</code>). The backend checked each packet hash
+        in the idempotency cache. First arrival → decrypted, verified, balances updated,
+        written to DB via JPA + JDBC. Subsequent arrivals of the same hash →
+        <span style="color:var(--yellow)">DUPLICATE_DROPPED</span>.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ LIVE DATA ═══════════════════════ -->
+  <div class="grid-2">
+
+    <!-- DEVICES -->
+    <div class="card">
+      <h3><span class="ico">📱</span>Mesh Devices</h3>
+      <div class="device-list" id="devices">
+        <div class="empty">Loading…</div>
+      </div>
+      <div class="divider"></div>
+      <div style="font-size:11px; color:var(--muted)">
+        Cache: <span id="cacheInfo" style="color:var(--text); font-family:var(--mono)">–</span>
+        packets in idempotency window
+        <span style="float:right;color:var(--muted)">auto-refreshes every 3s</span>
+      </div>
+    </div>
+
+    <!-- ACCOUNTS -->
+    <div class="card">
+      <h3><span class="ico">🏦</span>Account Balances</h3>
+      <table id="accounts-table">
+        <thead><tr><th>VPA</th><th>Holder</th><th>Balance</th><th>Change</th></tr></thead>
+        <tbody><tr><td colspan="4" class="empty">Loading…</td></tr></tbody>
+      </table>
+      <div class="divider"></div>
+      <div style="font-size:11px; color:var(--muted)">
+        Total money in system is <strong style="color:var(--green)">conserved</strong> across all transfers.
+      </div>
+    </div>
+  </div>
+
+  <!-- LEDGER + LOG -->
+  <div class="grid-2" style="margin-top:16px">
+
+    <!-- LEDGER -->
+    <div class="card">
+      <h3><span class="ico">📜</span>Transaction Ledger
+        <span style="float:right">
+          <a href="/servlet/export" style="color:var(--accent);font-size:11px;text-decoration:none;font-weight:600">
+            ⬇ Export CSV
+          </a>
+        </span>
+      </h3>
+      <div style="overflow-x:auto">
+        <table id="tx-table">
+          <thead><tr>
+            <th>#</th><th>From</th><th>To</th><th>Amount</th>
+            <th>Status</th><th>Hops</th><th>Time</th>
+          </tr></thead>
+          <tbody><tr><td colspan="7" class="empty">No transactions yet</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- LOG -->
+    <div class="card">
+      <h3><span class="ico">🖥</span>Activity Log
+        <span style="float:right">
+          <a href="/servlet/audit" target="_blank"
+             style="color:var(--accent);font-size:11px;text-decoration:none;font-weight:600">
+            View Audit File ↗
+          </a>
+          &nbsp;
+          <a href="/servlet/health" target="_blank"
+             style="color:var(--green);font-size:11px;text-decoration:none;font-weight:600">
+            Health ↗
+          </a>
+        </span>
+      </h3>
+      <div id="log"></div>
+      <div class="divider"></div>
+      <div style="font-size:11px; color:var(--muted)">
+        Servlet endpoints: <code style="color:var(--accent2)">/servlet/health</code>
+        &nbsp;·&nbsp;<code style="color:var(--accent2)">/servlet/export</code>
+        &nbsp;·&nbsp;<code style="color:var(--accent2)">/servlet/audit</code>
+        &nbsp;— registered via <code>ServletContext</code>, bypassing Spring MVC.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ TECH REFERENCE ═══════════════════════ -->
+  <div class="card" style="margin-top:16px">
+    <h3><span class="ico">⚙️</span>Implementation Reference</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:4px">
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">JDBC Layer</div>
+        <div style="font-size:12px;color:var(--text);line-height:1.8">
+          <code style="color:var(--accent2)">LedgerJdbcDao</code> uses raw
+          <code>PreparedStatement</code> — no JPA here.<br>
+          Queries: <code>summary()</code>, <code>findBySender()</code>, <code>databaseInfo()</code><br>
+          SQL-injection safe via bind parameters (tested).
         </div>
-    `).join('');
-    document.getElementById('cacheInfo').textContent =
-        `Idempotency cache size: ${m.idempotencyCacheSize}`;
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">File Handling</div>
+        <div style="font-size:12px;color:var(--text);line-height:1.8">
+          <code style="color:var(--accent2)">LedgerFileService</code> streams CSV exports.<br>
+          <code style="color:var(--accent2)">AuditLogService</code> appends every ingest event
+          to a rotating log file. Path traversal blocked.
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Custom Servlets</div>
+        <div style="font-size:12px;color:var(--text);line-height:1.8">
+          <code style="color:var(--accent2)">HealthServlet</code> — DB ping + uptime<br>
+          <code style="color:var(--accent2)">LedgerExportServlet</code> — stream / save / list CSV<br>
+          <code style="color:var(--accent2)">AuditLogServlet</code> — tail log lines<br>
+          <code style="color:var(--accent2)">RequestLogFilter</code> — adds <code>X-Request-Id</code>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Crypto</div>
+        <div style="font-size:12px;color:var(--text);line-height:1.8">
+          <code style="color:var(--accent2)">HybridCryptoService</code><br>
+          RSA-OAEP-SHA256 wraps an AES-256-GCM session key.<br>
+          2048-bit keypair generated at startup.
+        </div>
+      </div>
+    </div>
+  </div>
 
-    // Accounts
-    const accs = await fetch('/api/accounts').then(r => r.json());
-    document.querySelector('#accounts-table tbody').innerHTML = accs.map(a => `
-        <tr><td>${a.vpa}</td><td>${a.holderName}</td>
-            <td class="balance">₹${parseFloat(a.balance).toFixed(2)}</td></tr>
-    `).join('');
+</div><!-- /main -->
 
-    // Transactions
-    const txs = await fetch('/api/transactions').then(r => r.json());
-    document.querySelector('#tx-table tbody').innerHTML = txs.map(t => `
-        <tr>
-            <td>${t.id}</td><td>${t.senderVpa}</td><td>${t.receiverVpa}</td>
-            <td class="balance">₹${parseFloat(t.amount).toFixed(2)}</td>
-            <td class="status-${t.status}">${t.status}</td>
-            <td>${t.bridgeNodeId}</td><td>${t.hopCount}</td>
-            <td class="small">${new Date(t.settledAt).toLocaleTimeString()}</td>
-        </tr>
-    `).join('');
+<script>
+const prevBalances = {};
+
+/* ─── LOGGING ─── */
+function log(msg, type='ok') {
+  const el = document.getElementById('log');
+  const ts = new Date().toLocaleTimeString();
+  const cls = type === 'dup' ? 'log-dup' : type === 'err' ? 'log-err'
+              : type === 'info' ? 'log-info' : 'log-ok';
+  el.innerHTML = `<span class="log-ts">[${ts}]</span> <span class="${cls}">${msg}</span>\n` + el.innerHTML;
 }
 
+/* ─── REFRESH ─── */
+async function refresh() {
+  try {
+    const [mesh, accs, txs] = await Promise.all([
+      fetch('/api/mesh/state').then(r => r.json()),
+      fetch('/api/accounts').then(r => r.json()),
+      fetch('/api/transactions').then(r => r.json())
+    ]);
+
+    /* devices */
+    document.getElementById('devices').innerHTML = mesh.devices.map(d => `
+      <div class="device ${d.hasInternet ? 'bridge' : 'offline'}">
+        <span class="dev-icon">${d.hasInternet ? '📡' : '📱'}</span>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="dev-name">${d.deviceId}</span>
+            <span class="badge ${d.hasInternet ? 'badge-4g' : 'badge-off'}">
+              ${d.hasInternet ? '● 4G' : '○ OFFLINE'}
+            </span>
+          </div>
+          <div class="dev-meta">${d.packetCount} packet(s) held</div>
+          ${d.packetIds.length ? `<div class="packets">${d.packetIds.map(id=>`<span class="pkt">${id}</span>`).join('')}</div>` : ''}
+        </div>
+      </div>`).join('');
+
+    document.getElementById('cacheInfo').textContent = mesh.idempotencyCacheSize;
+
+    /* accounts */
+    document.querySelector('#accounts-table tbody').innerHTML = accs.map(a => {
+      const bal = parseFloat(a.balance).toFixed(2);
+      const prev = prevBalances[a.vpa];
+      let change = '';
+      if (prev !== undefined && prev !== bal) {
+        const diff = (parseFloat(bal) - parseFloat(prev)).toFixed(2);
+        const up = parseFloat(diff) > 0;
+        change = `<span style="color:${up?'var(--green)':'var(--red)'}">
+          ${up?'▲':'▼'} ₹${Math.abs(diff).toFixed(2)}</span>`;
+      }
+      prevBalances[a.vpa] = bal;
+      return `<tr>
+        <td class="mono">${a.vpa}</td>
+        <td>${a.holderName}</td>
+        <td class="balance">₹${bal}</td>
+        <td style="font-size:11px">${change}</td></tr>`;
+    }).join('');
+
+    /* transactions */
+    if (txs.length === 0) {
+      document.querySelector('#tx-table tbody').innerHTML =
+        '<tr><td colspan="7" class="empty">No transactions yet — inject a packet and bridge!</td></tr>';
+    } else {
+      document.querySelector('#tx-table tbody').innerHTML = txs.map(t => `
+        <tr>
+          <td class="mono" style="color:var(--muted)">#${t.id}</td>
+          <td class="mono" style="font-size:11px">${t.senderVpa}</td>
+          <td class="mono" style="font-size:11px">${t.receiverVpa}</td>
+          <td class="balance">₹${parseFloat(t.amount).toFixed(2)}</td>
+          <td><span class="status-${t.status}">${t.status}</span></td>
+          <td style="color:var(--muted);font-size:11px">${t.hopCount} hop${t.hopCount!==1?'s':''}</td>
+          <td style="font-size:11px;color:var(--muted)">${new Date(t.settledAt).toLocaleTimeString()}</td>
+        </tr>`).join('');
+    }
+  } catch(e) { /* ignore refresh errors */ }
+}
+
+/* ─── ACTIONS ─── */
 async function sendPacket() {
-    const body = {
-        senderVpa: document.getElementById('senderVpa').value,
-        receiverVpa: document.getElementById('receiverVpa').value,
+  const sender = document.getElementById('senderVpa').value;
+  const receiver = document.getElementById('receiverVpa').value;
+  if (sender === receiver) { log('Sender and receiver must be different', 'err'); return; }
+
+  const btn = document.getElementById('btnSend');
+  btn.disabled = true; btn.textContent = '⏳ Encrypting…';
+  try {
+    const r = await fetch('/api/demo/send', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        senderVpa: sender, receiverVpa: receiver,
         amount: parseFloat(document.getElementById('amount').value),
         pin: document.getElementById('pin').value,
-        ttl: 5,
-        startDevice: 'phone-alice'
-    };
-    const r = await fetch('/api/demo/send', {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(body)
+        ttl: 5, startDevice: 'phone-alice'
+      })
     }).then(r => r.json());
-    log(`📤 Packet ${r.packetId.substring(0,8)} encrypted & injected at ${r.injectedAt} (TTL ${r.ttl})`);
-    log(`   ciphertext (truncated): ${r.ciphertextPreview}`);
+
+    log(`🔐 Packet <b>${r.packetId.substring(0,12)}…</b> encrypted with AES-256-GCM + RSA-OAEP`, 'ok');
+    log(`   injected at <b>${r.injectedAt}</b>  TTL=${r.ttl}`, 'info');
+    log(`   ciphertext: ${r.ciphertextPreview}`, 'info');
+
+    showExp('exp1'); activateCard('card1');
     refresh();
+  } catch(e) { log('Error: ' + e.message, 'err'); }
+  finally { btn.disabled = false; btn.innerHTML = '🔐 Encrypt &amp; Inject'; }
 }
 
 async function gossip() {
-    const r = await fetch('/api/mesh/gossip', {method: 'POST'}).then(r => r.json());
-    log(`🔄 Gossip: ${r.transfers} transfer(s) — ${JSON.stringify(r.deviceCounts)}`);
+  const btn = document.getElementById('btnGossip');
+  btn.disabled = true; btn.innerHTML = '<span class="spinning">🔄</span> Gossiping…';
+  try {
+    const r = await fetch('/api/mesh/gossip', {method:'POST'}).then(r => r.json());
+    const counts = Object.values(r.deviceCounts);
+    const total = counts.reduce((a,b)=>a+b,0);
+
+    document.getElementById('gossipStats').style.display = 'grid';
+    document.getElementById('gTransfers').textContent = r.transfers;
+    document.getElementById('gDevices').textContent = counts.filter(c=>c>0).length;
+    document.getElementById('gPackets').textContent = total;
+
+    log(`🔄 Gossip: <b>${r.transfers}</b> transfer(s) — devices: ${JSON.stringify(r.deviceCounts)}`, 'ok');
+    showExp('exp2'); activateCard('card2');
     refresh();
+  } catch(e) { log('Gossip error: ' + e.message, 'err'); }
+  finally { btn.disabled = false; btn.textContent = '🔄 Run Gossip Round'; }
 }
 
 async function flushBridges() {
-    const r = await fetch('/api/mesh/flush', {method: 'POST'}).then(r => r.json());
-    log(`📡 ${r.uploadsAttempted} bridge upload(s):`);
+  const btn = document.getElementById('btnFlush');
+  btn.disabled = true; btn.innerHTML = '<span class="spinning">📡</span> Uploading…';
+  try {
+    const r = await fetch('/api/mesh/flush', {method:'POST'}).then(r => r.json());
+    log(`📡 Bridge upload — <b>${r.uploadsAttempted}</b> attempt(s)`, 'ok');
     r.results.forEach(res => {
-        log(`   ${res.bridgeNode} packet ${res.packetId} → ${res.outcome}` +
-            (res.reason ? ` (${res.reason})` : ''));
+      const dup = res.outcome === 'DUPLICATE_DROPPED';
+      log(`   ${res.bridgeNode} → <b>${res.packetId}</b> : ${res.outcome}${res.reason?' ('+res.reason+')':''}`,
+          dup ? 'dup' : 'ok');
     });
+    showExp('exp3'); activateCard('card3');
     refresh();
+  } catch(e) { log('Flush error: ' + e.message, 'err'); }
+  finally { btn.disabled = false; btn.textContent = '📡 Bridge Upload'; }
 }
 
 async function resetMesh() {
-    await fetch('/api/mesh/reset', {method: 'POST'});
-    log('🗑 mesh + idempotency cache cleared');
-    refresh();
+  if (!confirm('Reset the mesh and idempotency cache?')) return;
+  await fetch('/api/mesh/reset', {method:'POST'});
+  log('🗑 Mesh + idempotency cache cleared', 'info');
+  ['exp1','exp2','exp3'].forEach(id => document.getElementById(id).classList.remove('show'));
+  ['card1','card2','card3'].forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById('gossipStats').style.display = 'none';
+  refresh();
 }
 
+/* ─── UI HELPERS ─── */
+function showExp(id) {
+  document.getElementById(id).classList.add('show');
+}
+function activateCard(id) {
+  document.getElementById(id).classList.add('active');
+}
+function validateSender() {
+  const s = document.getElementById('senderVpa').value;
+  const r = document.getElementById('receiverVpa');
+  [...r.options].forEach(o => o.disabled = (o.value === s));
+  if (r.value === s) r.value = [...r.options].find(o => !o.disabled)?.value;
+}
+
+/* ─── BOOT ─── */
+validateSender();
 refresh();
 setInterval(refresh, 3000);
 </script>
