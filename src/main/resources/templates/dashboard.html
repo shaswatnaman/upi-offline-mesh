@@ -6,480 +6,458 @@
 <title>MeshPay — UPI Offline Simulation</title>
 <style>
 :root{
-  --bg:#060810;--s1:#0b0f1a;--s2:#0f1623;--border:#1a2540;
+  --bg:#07090f;--s1:#0b0f1a;--s2:#0f1623;--border:#1a2540;
   --blue:#3b82f6;--cyan:#06b6d4;--green:#22c55e;--red:#ef4444;--yellow:#f59e0b;
-  --purple:#a855f7;--pink:#ec4899;
   --text:#e2e8f0;--muted:#4b607a;--mono:'Fira Code','Consolas',monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:-apple-system,'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
 
+/* ── HERO ── */
 .hero{
-  background:linear-gradient(135deg,#040912 0%,#0a1228 55%,#060810 100%);
-  border-bottom:1px solid var(--border);padding:20px 28px 16px;
+  background:linear-gradient(135deg,#050a15 0%,#0b1428 60%,#070e1c 100%);
+  border-bottom:1px solid var(--border);padding:22px 28px 18px;
+  display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap;
 }
-.hero h1{font-size:22px;font-weight:800;letter-spacing:-.5px;}
+.hero-left{flex:1;min-width:260px;}
+.hero h1{font-size:24px;font-weight:800;letter-spacing:-0.5px;color:#f1f5f9;}
 .hero h1 em{font-style:normal;color:var(--blue);}
-.hero p{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.7;max-width:700px;}
-.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;}
-.tag{background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.22);
-     border-radius:20px;font-size:10px;font-weight:700;padding:3px 10px;letter-spacing:.3px;}
+.hero p{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.7;max-width:600px;}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.tag{background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.25);
+     border-radius:20px;font-size:10.5px;font-weight:600;padding:3px 10px;letter-spacing:.3px;}
 
-/* ── CANVAS ── */
-.canvas-outer{overflow-x:auto;border-bottom:1px solid var(--border);}
+/* ── NETWORK CANVAS ── */
+.canvas-wrap{overflow-x:auto;border-bottom:1px solid var(--border);}
 #canvas{
-  position:relative;width:1320px;height:720px;
-  background:#060810;overflow:hidden;
-}
-#canvas::before{
-  content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
-  background-image:
-    linear-gradient(rgba(59,130,246,.035) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(59,130,246,.035) 1px,transparent 1px);
-  background-size:48px 48px;
-  animation:gridDrift 22s linear infinite;
-}
-@keyframes gridDrift{0%{background-position:0 0;}100%{background-position:48px 48px;}}
-#canvas::after{
-  content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
-  background:radial-gradient(ellipse 65% 55% at 50% 38%,#0d1a2e 0%,transparent 65%);
+  position:relative;width:960px;height:540px;
+  background:radial-gradient(ellipse at 50% 40%,#0d1628 0%,#07090f 70%);
 }
 
-#net-svg{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;overflow:visible;}
-#anim-svg{position:absolute;top:0;left:0;width:100%;height:100%;z-index:30;pointer-events:none;overflow:visible;}
-
+/* SVG lines */
 .conn{fill:none;stroke-linecap:round;}
-.mesh-line{stroke:#1e3a60;stroke-width:1.8;}
-.inet-line{stroke:#2450a0;stroke-width:2;stroke-dasharray:10 6;}
-.mesh-active{stroke:var(--blue);stroke-width:3;opacity:0;transition:opacity .08s;}
+.conn.mesh{stroke:#1a2540;stroke-width:1.5;}
+.conn.internet{stroke:#1d4ed8;stroke-width:2;stroke-dasharray:8 4;}
+.conn.active-mesh{stroke:#3b82f6;stroke-width:2.5;opacity:1;}
+.conn.active-inet{stroke:#22c55e;stroke-width:3;}
+.conn-lbl{font-size:9px;fill:#2d4a70;font-family:-apple-system,sans-serif;font-weight:600;letter-spacing:.4px;}
 
-/* ── PHONE ── */
+/* ── PHONE NODE ── */
 .phone{
-  position:absolute;width:82px;height:138px;
-  background:#0a1828;border:2px solid rgba(59,130,246,.65);border-radius:20px;
-  display:flex;flex-direction:column;overflow:visible;z-index:10;
-  box-shadow:0 0 22px rgba(59,130,246,.3), 0 0 6px rgba(59,130,246,.2), 0 4px 14px rgba(0,0,0,.9);
+  position:absolute;width:74px;height:126px;
+  background:#0a0e1a;border:2px solid #1a2540;border-radius:16px;
+  display:flex;flex-direction:column;overflow:hidden;
+  transition:border-color .3s,box-shadow .3s;cursor:default;
 }
-.ph-devname{
-  position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);
-  font-size:8.5px;font-weight:700;color:#5b82aa;white-space:nowrap;letter-spacing:.3px;
-  text-shadow:0 0 10px rgba(59,130,246,.4);
-}
-.phone-inner{display:flex;flex-direction:column;height:100%;overflow:hidden;border-radius:20px;}
-.phone.bridge-node{border-color:rgba(34,197,94,.75);box-shadow:0 0 36px rgba(34,197,94,.35),0 0 10px rgba(34,197,94,.2),0 4px 14px rgba(0,0,0,.9);}
-.phone.rx-flash{animation:rxFlash .6s ease-out forwards;}
-@keyframes rxFlash{0%{box-shadow:0 0 22px rgba(59,130,246,.3),0 0 6px rgba(59,130,246,.2);}35%{box-shadow:0 0 50px 16px rgba(59,130,246,.9),0 0 20px rgba(59,130,246,.5);}100%{box-shadow:0 0 22px rgba(59,130,246,.3),0 0 6px rgba(59,130,246,.2);}}
-.phone.settle-flash{animation:settleFlash 1s ease-out forwards;}
-@keyframes settleFlash{0%{box-shadow:0 0 22px rgba(59,130,246,.3);}40%{box-shadow:0 0 55px 18px rgba(34,197,94,.95),0 0 25px rgba(34,197,94,.5);}100%{box-shadow:0 0 22px rgba(59,130,246,.3);}}
-.ph-notch{height:15px;background:#07111e;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.ph-notch::after{content:'';width:24px;height:5px;background:#040a14;border-radius:3px;}
-.ph-screen{flex:1;background:#0c1d36;margin:0 3px;border-radius:4px;padding:5px 4px 3px;
+.phone.bridge-node{border-color:rgba(34,197,94,.6);box-shadow:0 0 24px rgba(34,197,94,.15);}
+.phone.flash{animation:phoneFlash .6s ease-out;}
+@keyframes phoneFlash{0%{box-shadow:0 0 0 0 rgba(59,130,246,0);}50%{box-shadow:0 0 28px 6px rgba(59,130,246,.7);}100%{box-shadow:0 0 0 0 rgba(59,130,246,0);}}
+.phone.settle-flash{animation:greenFlash .8s ease-out;}
+@keyframes greenFlash{0%{box-shadow:0 0 0 0 rgba(34,197,94,0);}50%{box-shadow:0 0 28px 8px rgba(34,197,94,.8);}100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}}
+.ph-notch{height:14px;background:#0d1220;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ph-notch::after{content:'';width:22px;height:4px;background:#07090f;border-radius:2px;}
+.ph-screen{flex:1;background:#08111f;margin:0 3px;border-radius:3px;padding:5px 4px 3px;
            display:flex;flex-direction:column;align-items:center;gap:3px;overflow:hidden;}
-.ph-sig{display:flex;align-items:flex-end;gap:2px;height:11px;margin-bottom:2px;}
-.ph-sig span{width:3px;border-radius:1px;}
-.ph-sig span:nth-child(1){height:3px;} .ph-sig span:nth-child(2){height:5px;}
-.ph-sig span:nth-child(3){height:8px;} .ph-sig span:nth-child(4){height:11px;}
-.ph-sig.on span{background:#22c55e;opacity:.9;}
-.ph-sig.off span{background:#2a4568;opacity:.9;}
-.ph-label{font-size:7px;font-weight:800;color:#6a90b8;text-align:center;line-height:1.2;letter-spacing:.2px;}
-.ph-badge{font-size:6px;font-weight:800;padding:2px 5px;border-radius:10px;margin-top:1px;letter-spacing:.3px;}
-.ph-badge.on{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.5);}
-.ph-badge.off{background:rgba(59,130,246,.08);color:#4a78a8;border:1px solid rgba(59,130,246,.25);}
-.ph-pkts{display:flex;flex-wrap:wrap;gap:2.5px;justify-content:center;min-height:20px;margin-top:3px;padding:0 2px;}
+.ph-signal{display:flex;align-items:flex-end;gap:1.5px;height:11px;margin-bottom:1px;}
+.ph-signal span{width:3px;background:#22c55e;border-radius:1px;opacity:.9;}
+.ph-signal span:nth-child(1){height:3px;} .ph-signal span:nth-child(2){height:5px;}
+.ph-signal span:nth-child(3){height:8px;} .ph-signal span:nth-child(4){height:11px;}
+.ph-name{font-size:7.5px;font-weight:700;color:#94a3b8;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;}
+.ph-badge{font-size:7px;font-weight:800;padding:1.5px 5px;border-radius:10px;letter-spacing:.4px;}
+.ph-badge.on{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3);}
+.ph-badge.off{background:rgba(75,96,122,.1);color:var(--muted);border:1px solid rgba(75,96,122,.2);}
+.ph-pkts{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;min-height:16px;margin-top:2px;}
 .pkt-pip{
-  width:12px;height:12px;border-radius:50%;
-  background:radial-gradient(circle at 35% 30%,#bfdbfe,#1d4ed8 70%);
-  box-shadow:0 0 10px 3px rgba(59,130,246,.8);
-  animation:pipPulse 1.9s ease-in-out infinite;
+  width:10px;height:10px;border-radius:50%;
+  background:radial-gradient(circle,#60a5fa,#2563eb);
+  box-shadow:0 0 6px rgba(96,165,250,.9);
+  animation:pipPulse 1.8s ease-in-out infinite;
 }
-@keyframes pipPulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.3);opacity:.75;}}
-.ph-home{height:15px;background:#07111e;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.ph-home::after{content:'';width:24px;height:4px;background:#1a3050;border-radius:2px;}
+@keyframes pipPulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.2);opacity:.8;}}
+.ph-home{height:14px;background:#0d1220;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ph-home::after{content:'';width:20px;height:4px;background:#1a2540;border-radius:2px;}
 
-/* ripple rings */
-.ripple{
-  position:absolute;border-radius:20px;pointer-events:none;z-index:25;
-  border:2px solid rgba(59,130,246,.75);
-  top:0;left:0;
-}
-@keyframes rippleOut{0%{transform:scale(1);opacity:.75;}100%{transform:scale(1.6);opacity:0;}}
-
-/* ── SERVER ── */
+/* ── SERVER NODE ── */
 .server-node{
-  position:absolute;width:126px;height:80px;z-index:10;
-  background:#060e1a;border:1.5px solid #1d4ed8;border-radius:14px;
+  position:absolute;width:110px;height:72px;
+  background:#08111f;border:2px solid #1d4ed8;border-radius:12px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  box-shadow:0 0 28px rgba(29,78,216,.28),inset 0 1px 0 rgba(59,130,246,.1);
+  box-shadow:0 0 20px rgba(29,78,216,.2);
 }
-.server-node.settled{animation:srvPulse 1.1s ease-out;}
-@keyframes srvPulse{0%,100%{box-shadow:0 0 28px rgba(29,78,216,.28);}45%{box-shadow:0 0 70px 20px rgba(34,197,94,.75);border-color:#22c55e;}}
-.srv-icon{font-size:24px;line-height:1;}
-.srv-name{font-size:9px;font-weight:800;color:#93c5fd;letter-spacing:.4px;}
-.srv-stat{font-size:8px;color:var(--green);font-weight:700;}
+.server-node.settled{animation:serverPulse 1s ease-out;}
+@keyframes serverPulse{0%,100%{box-shadow:0 0 20px rgba(29,78,216,.2);}50%{box-shadow:0 0 40px 8px rgba(34,197,94,.6);border-color:#22c55e;}}
+.srv-icon{font-size:22px;line-height:1;}
+.srv-name{font-size:9px;font-weight:700;color:#93c5fd;letter-spacing:.3px;}
+.srv-db{font-size:7.5px;color:var(--muted);}
+.srv-status{font-size:8px;font-weight:700;color:var(--green);}
 
-/* cache chip */
-.cache-chip{
-  position:absolute;top:13px;left:15px;z-index:20;
-  background:rgba(6,8,16,.9);border:1px solid var(--border);
-  border-radius:8px;padding:7px 13px;font-size:11px;
+/* Internet animated line glow */
+.inet-glow{
+  stroke:#3b82f6;stroke-width:1;fill:none;opacity:.3;
+  animation:inetAnim 3s linear infinite;
 }
-/* legend */
-.legend{
-  position:absolute;bottom:14px;right:14px;z-index:20;
-  background:rgba(6,8,16,.9);border:1px solid var(--border);
-  border-radius:10px;padding:12px 15px;display:flex;flex-direction:column;gap:7px;
+@keyframes inetAnim{0%{stroke-dashoffset:0;}100%{stroke-dashoffset:-100;}}
+
+/* ── LEGEND ── */
+.canvas-legend{
+  position:absolute;bottom:14px;right:16px;
+  background:rgba(7,9,15,.85);border:1px solid var(--border);
+  border-radius:8px;padding:10px 14px;display:flex;flex-direction:column;gap:5px;
 }
-.leg{display:flex;align-items:center;gap:10px;font-size:10px;color:var(--muted);}
-.leg-l{display:inline-block;width:28px;height:2px;border-radius:1px;}
-.leg-d{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
+.leg-row{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--muted);}
+.leg-line{display:inline-block;width:28px;height:2px;border-radius:1px;}
+.leg-dot{width:10px;height:10px;border-radius:50%;display:inline-block;}
 
-/* ── BALANCE STRIP ── */
-.bal-strip{display:flex;background:var(--border);gap:1px;}
-.bal-tile{flex:1;background:var(--s1);padding:13px 16px;display:flex;align-items:center;gap:12px;}
-.bal-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;
-        justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;}
-.bal-vpa{font-size:11px;color:var(--muted);}
-.bal-amt{font-size:17px;font-weight:700;font-family:var(--mono);color:var(--green);margin-top:1px;}
-.bal-delta{font-size:10px;font-weight:700;margin-top:1px;min-height:14px;}
+/* ── ACCOUNT STRIP ── */
+.bal-strip{display:flex;gap:1px;background:var(--border);}
+.bal-tile{flex:1;background:var(--s1);padding:14px 18px;display:flex;align-items:center;gap:14px;}
+.bal-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;
+            justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;}
+.bal-info .vpa{font-size:11px;color:var(--muted);}
+.bal-info .amount{font-size:17px;font-weight:700;font-family:var(--mono);color:var(--green);margin-top:1px;}
+.bal-delta{font-size:10px;font-weight:700;margin-top:1px;}
 
-/* ── MAIN ── */
-.main{max-width:1400px;margin:0 auto;padding:20px 24px 40px;}
-.step-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px;}
-.sc{background:var(--s1);border:1px solid var(--border);border-radius:12px;
-    padding:18px;position:relative;overflow:hidden;transition:border-color .2s;}
-.sc.lit{border-color:var(--blue);}
-.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
-            background:linear-gradient(90deg,var(--blue),var(--cyan));opacity:0;transition:.2s;}
-.sc.lit::before{opacity:1;}
-.sc-hdr{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
-.sc-num{display:inline-flex;align-items:center;justify-content:center;
-        width:26px;height:26px;border-radius:8px;font-weight:800;font-size:13px;flex-shrink:0;}
-.sc-title{font-size:14px;font-weight:700;}
-.sc-desc{font-size:11.5px;color:var(--muted);line-height:1.65;margin:0 0 14px 34px;}
+/* ── CONTROLS ── */
+.main{max-width:1280px;margin:0 auto;padding:20px 24px 40px;}
+.step-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px;}
+.step-card{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:18px;
+           position:relative;overflow:hidden;transition:border-color .2s;}
+.step-card.lit{border-color:var(--blue);}
+.step-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+                   background:linear-gradient(90deg,var(--blue),var(--cyan));opacity:0;transition:.2s;}
+.step-card.lit::before{opacity:1;}
+.step-num{display:inline-flex;align-items:center;justify-content:center;
+          width:26px;height:26px;border-radius:8px;font-weight:800;font-size:13px;
+          background:var(--blue);color:white;margin-right:8px;flex-shrink:0;}
+.step-title{font-size:14px;font-weight:700;color:var(--text);}
+.step-desc{font-size:11.5px;color:var(--muted);margin:8px 0 14px;line-height:1.65;padding-left:34px;}
+.form-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
 select,input[type=number],input[type=text]{
   background:var(--bg);color:var(--text);border:1px solid var(--border);
-  border-radius:8px;padding:7px 11px;font-size:12px;outline:none;transition:border-color .2s;}
+  border-radius:8px;padding:7px 11px;font-size:12px;outline:none;
+  transition:border-color .2s;
+}
 select:focus,input:focus{border-color:var(--blue);}
-.form-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
 .lbl{font-size:11px;color:var(--muted);}
+.arr{color:var(--muted);font-size:16px;}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;
      border:none;cursor:pointer;font-size:12.5px;font-weight:700;letter-spacing:.2px;
      transition:all .15s;white-space:nowrap;}
 .btn:active{transform:scale(.97);}
 .btn:disabled{opacity:.45;cursor:not-allowed;}
-.btn-blue{background:var(--blue);color:white;}  .btn-blue:hover{background:#2563eb;}
-.btn-cyan{background:var(--cyan);color:#082f49;} .btn-cyan:hover{background:#0891b2;color:white;}
-.btn-green{background:var(--green);color:#052e16;}.btn-green:hover{background:#16a34a;color:white;}
-.btn-red{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2);}
+.btn-blue{background:var(--blue);color:white;}         .btn-blue:hover{background:#2563eb;}
+.btn-cyan{background:var(--cyan);color:#082f49;}        .btn-cyan:hover{background:#0891b2;color:white;}
+.btn-green{background:var(--green);color:#052e16;}      .btn-green:hover{background:#16a34a;color:white;}
+.btn-red{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.25);}
 .btn-red:hover{background:var(--red);color:white;}
 .btn-sm{padding:6px 12px;font-size:11.5px;}
-.spin{animation:spin .7s linear infinite;display:inline-block;}
+.spin{animation:spin .8s linear infinite;display:inline-block;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.stat-row{display:none;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
-.stat-row.show{display:flex;}
-.chip{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:5px 12px;text-align:center;}
-.chip .v{font-family:var(--mono);font-size:17px;font-weight:700;}
-.chip .l{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:1px;}
-.xp{background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.18);
-    border-radius:8px;padding:10px 13px;font-size:11.5px;color:#93c5fd;
-    line-height:1.65;display:none;margin-top:10px;}
-.xp.show{display:block;animation:fadeUp .3s ease-out;}
+
+/* ── EXPLAINER ── */
+.explainer{background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.18);
+           border-radius:8px;padding:10px 13px;font-size:11.5px;color:#93c5fd;
+           line-height:1.65;display:none;margin-top:12px;}
+.explainer.show{display:block;animation:fadeUp .3s ease-out;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-.xp strong{color:var(--cyan);}
+.explainer strong{color:var(--cyan);}
+
+/* ── STAT CHIPS ── */
+.stat-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.stat-chip{background:var(--bg);border:1px solid var(--border);border-radius:8px;
+           padding:6px 12px;text-align:center;}
+.stat-chip .v{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--text);}
+.stat-chip .l{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:1px;}
+
+/* ── BOTTOM GRID ── */
 .bot-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:760px){.bot-grid,.step-row{grid-template-columns:1fr;}}
 .card{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:18px;}
-.card-hdr{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;
-          color:var(--muted);margin-bottom:13px;display:flex;align-items:center;justify-content:space-between;}
+.card-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;
+          color:var(--muted);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;}
 .card-hdr a{font-size:10.5px;color:var(--blue);text-decoration:none;font-weight:700;letter-spacing:0;}
+
+/* ── TABLE ── */
 table{width:100%;border-collapse:collapse;font-size:12px;}
-th{padding:6px 8px;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px;
+th{padding:7px 8px;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px;
    border-bottom:1px solid var(--border);text-align:left;}
-td{padding:7px 8px;border-bottom:1px solid rgba(26,37,64,.5);vertical-align:middle;}
+td{padding:8px 8px;border-bottom:1px solid rgba(26,37,64,.5);vertical-align:middle;}
 tr:last-child td{border-bottom:none;}
-tr:hover td{background:rgba(255,255,255,.012);}
+tr:hover td{background:rgba(255,255,255,.015);}
 .mono{font-family:var(--mono);}
 .green{color:var(--green);font-weight:700;}
-.s-SETTLED{color:var(--green);font-size:10px;font-weight:800;}
-.s-DUPLICATE_DROPPED{color:var(--yellow);font-size:10px;font-weight:800;}
-.s-REJECTED,.s-INVALID{color:var(--red);font-size:10px;font-weight:800;}
-#log{background:#020508;color:#4ade80;font-family:var(--mono);font-size:11px;
+.s-SETTLED{color:var(--green);font-size:10.5px;font-weight:700;}
+.s-DUPLICATE_DROPPED{color:var(--yellow);font-size:10.5px;font-weight:700;}
+.s-REJECTED,.s-INVALID{color:var(--red);font-size:10.5px;font-weight:700;}
+
+/* ── LOG ── */
+#log{background:#020609;color:#4ade80;font-family:var(--mono);font-size:11px;
      border:1px solid var(--border);border-radius:8px;padding:12px;
-     max-height:180px;overflow-y:auto;line-height:1.9;white-space:pre-wrap;word-break:break-all;}
+     max-height:180px;overflow-y:auto;line-height:1.8;white-space:pre-wrap;word-break:break-all;}
 .log-ts{color:var(--muted);}
-.log-ok{color:#4ade80;}.log-dup{color:var(--yellow);}.log-err{color:var(--red);}.log-info{color:#67e8f9;}
-.tech-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:10px;}
-.tb{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px;}
-.tb-t{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px;}
-.tb p{font-size:11px;color:#94a3b8;line-height:1.8;}
-.tb code{color:var(--cyan);font-family:var(--mono);font-size:10px;}
-.divider{height:1px;background:var(--border);margin:13px 0;}
+.log-ok{color:#4ade80;} .log-dup{color:var(--yellow);} .log-err{color:var(--red);} .log-info{color:#67e8f9;}
+
+/* ── TECH PANEL ── */
+.tech-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:12px;}
+.tech-block{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;}
+.tech-title{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;}
+.tech-block p{font-size:11px;color:#94a3b8;line-height:1.8;}
+.tech-block code{color:var(--cyan);font-family:var(--mono);font-size:10.5px;}
+
+.divider{height:1px;background:var(--border);margin:14px 0;}
 .empty{text-align:center;color:var(--muted);padding:20px;font-size:12px;}
 </style>
 </head>
 <body>
 
+<!-- ══════════════════ HERO ══════════════════ -->
 <div class="hero">
-  <h1>📡 <em>MeshPay</em> — UPI Offline Mesh Simulation</h1>
-  <p>Payments hop peer-to-peer through offline phones via gossip protocol. A 4G bridge node eventually settles to the backend. Watch live encrypted packets flow through the mesh.</p>
-  <div class="tags">
-    <span class="tag">RSA-2048 + AES-256-GCM</span>
-    <span class="tag">Gossip Protocol</span>
-    <span class="tag">Idempotent Settlement</span>
-    <span class="tag">Plain JDBC DAO</span>
-    <span class="tag">Custom Servlets</span>
-    <span class="tag">Spring Boot 3</span>
+  <div class="hero-left">
+    <h1>📡 <em>MeshPay</em> — UPI Offline Mesh Simulation</h1>
+    <p>Payments propagate through a peer-to-peer mesh of offline phones using the gossip protocol.
+       A bridge node with 4G settles to the backend. Watch packets flow in real time.</p>
+    <div class="tags">
+      <span class="tag">RSA-2048 + AES-256-GCM</span>
+      <span class="tag">Gossip Protocol</span>
+      <span class="tag">Idempotent Settlement</span>
+      <span class="tag">Plain JDBC DAO</span>
+      <span class="tag">Custom Servlets</span>
+      <span class="tag">Spring Boot</span>
+    </div>
   </div>
 </div>
 
-<!-- ══ NETWORK CANVAS ══ -->
-<div class="canvas-outer">
+<!-- ══════════════════ NETWORK CANVAS ══════════════════ -->
+<div class="canvas-wrap">
 <div id="canvas">
 
-<svg id="net-svg">
-  <defs>
-    <filter id="glow-line" x="-60%" y="-60%" width="220%" height="220%">
-      <feGaussianBlur stdDeviation="5" result="b"/>
-      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <filter id="glow-pkt" x="-250%" y="-250%" width="600%" height="600%">
-      <feGaussianBlur stdDeviation="7" result="b"/>
-      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <radialGradient id="pkt-blue-g" cx="35%" cy="30%">
-      <stop offset="0%" stop-color="#dbeafe"/>
-      <stop offset="55%" stop-color="#3b82f6"/>
-      <stop offset="100%" stop-color="#1e3a8a"/>
-    </radialGradient>
-    <radialGradient id="pkt-green-g" cx="35%" cy="30%">
-      <stop offset="0%" stop-color="#dcfce7"/>
-      <stop offset="55%" stop-color="#22c55e"/>
-      <stop offset="100%" stop-color="#14532d"/>
-    </radialGradient>
-    <linearGradient id="inet-grad" gradientUnits="userSpaceOnUse" x1="660" y1="95" x2="660" y2="195">
-      <stop offset="0%" stop-color="#60a5fa" stop-opacity=".95"/>
-      <stop offset="100%" stop-color="#2563eb" stop-opacity=".45"/>
-    </linearGradient>
-  </defs>
+  <!-- Base SVG: lines + labels -->
+  <svg id="net-svg" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;overflow:visible">
+    <defs>
+      <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      <filter id="glow-lg"><feGaussianBlur stdDeviation="6" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      <marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L6,3 z" fill="#1a2540"/>
+      </marker>
+    </defs>
 
-  <!-- Mesh connection lines (base) — endpoints are phone centers -->
-  <line id="cl-ba"  class="conn mesh-line" x1="660" y1="264" x2="191" y2="489"/>
-  <line id="cl-bs1" class="conn mesh-line" x1="660" y1="264" x2="491" y2="579"/>
-  <line id="cl-bs2" class="conn mesh-line" x1="660" y1="264" x2="831" y2="579"/>
-  <line id="cl-bs3" class="conn mesh-line" x1="660" y1="264" x2="1101" y2="489"/>
-  <line id="cl-as1" class="conn mesh-line" x1="191" y1="489" x2="491" y2="579"/>
-  <line id="cl-12"  class="conn mesh-line" x1="491" y1="579" x2="831" y2="579"/>
-  <line id="cl-23"  class="conn mesh-line" x1="831" y1="579" x2="1101" y2="489"/>
-  <line id="cl-a2"  class="conn mesh-line" x1="191" y1="489" x2="831" y2="579" stroke-dasharray="5 4" stroke-opacity=".4"/>
+    <!-- Mesh connections -->
+    <line id="cl-bridge-alice"    class="conn mesh" x1="450" y1="215" x2="148" y2="370"/>
+    <line id="cl-bridge-s1"      class="conn mesh" x1="450" y1="215" x2="375" y2="452"/>
+    <line id="cl-bridge-s2"      class="conn mesh" x1="450" y1="215" x2="715" y2="370"/>
+    <line id="cl-alice-s1"       class="conn mesh" x1="148" y1="370" x2="375" y2="452"/>
+    <line id="cl-s1-s2"          class="conn mesh" x1="375" y1="452" x2="715" y2="370"/>
 
-  <!-- Active glow lines (JavaScript sets opacity when animating) -->
-  <line id="al-ba"  class="conn mesh-active" filter="url(#glow-line)" x1="660" y1="264" x2="191" y2="489"/>
-  <line id="al-bs1" class="conn mesh-active" filter="url(#glow-line)" x1="660" y1="264" x2="491" y2="579"/>
-  <line id="al-bs2" class="conn mesh-active" filter="url(#glow-line)" x1="660" y1="264" x2="831" y2="579"/>
-  <line id="al-bs3" class="conn mesh-active" filter="url(#glow-line)" x1="660" y1="264" x2="1101" y2="489"/>
-  <line id="al-as1" class="conn mesh-active" filter="url(#glow-line)" stroke="var(--cyan)"   x1="191" y1="489" x2="491" y2="579"/>
-  <line id="al-12"  class="conn mesh-active" filter="url(#glow-line)" stroke="var(--cyan)"   x1="491" y1="579" x2="831" y2="579"/>
-  <line id="al-23"  class="conn mesh-active" filter="url(#glow-line)" stroke="var(--cyan)"   x1="831" y1="579" x2="1101" y2="489"/>
-  <line id="al-a2"  class="conn mesh-active" filter="url(#glow-line)" stroke="var(--purple)" x1="191" y1="489" x2="831" y2="579"/>
+    <!-- Internet line (dashed, glowing) -->
+    <line id="cl-server-bridge"  class="conn internet" x1="450" y1="94" x2="450" y2="152"/>
+    <!-- Animated glow on top -->
+    <line class="inet-glow" x1="450" y1="94" x2="450" y2="152"
+          stroke-dasharray="12 8" stroke-dashoffset="0"/>
 
-  <!-- Internet line base -->
-  <line class="conn inet-line" x1="660" y1="95" x2="660" y2="195"/>
-  <!-- Animated flow on top -->
-  <line id="inet-flow"
-    x1="660" y1="95" x2="660" y2="195"
-    fill="none" stroke="url(#inet-grad)" stroke-width="3.5" stroke-linecap="round"
-    stroke-dasharray="14 10"/>
+    <!-- Labels -->
+    <text class="conn-lbl" x="356" y="88" transform="rotate(-90,356,88)">4G Internet</text>
+    <text class="conn-lbl" x="256" y="318">Mesh (BT/WiFi-Direct)</text>
+    <text class="conn-lbl" x="510" y="415">Mesh</text>
+  </svg>
 
-  <!-- Labels -->
-  <text font-size="8.5" fill="#2a4570" font-family="-apple-system,sans-serif" font-weight="700" letter-spacing=".5">
-    <textPath href="#lp-inet" startOffset="10%">4G Internet</textPath>
-  </text>
-  <path id="lp-inet" d="M682,98 L682,192" fill="none"/>
+  <!-- ── SERVER NODE ── -->
+  <div class="server-node" id="node-server" style="left:395px;top:22px;">
+    <div class="srv-icon">☁️</div>
+    <div class="srv-name">BACKEND SERVER</div>
+    <div class="srv-db" id="srv-db">H2 in-memory • Spring Boot</div>
+    <div class="srv-status">● READY</div>
+  </div>
 
-  <text font-size="8" fill="#182540" font-family="-apple-system,sans-serif" font-weight="700">
-    <textPath href="#lp-mesh" startOffset="18%">BT / WiFi-Direct mesh</textPath>
-  </text>
-  <path id="lp-mesh" d="M232,489 L831,579" fill="none"/>
-</svg>
-
-<!-- SERVER -->
-<div class="server-node" id="node-server" style="left:597px;top:25px;">
-  <div class="srv-icon">☁️</div>
-  <div class="srv-name">BACKEND SERVER</div>
-  <div class="srv-stat">● READY</div>
-</div>
-
-<!-- BRIDGE -->
-<div class="phone bridge-node" id="node-phone-bridge" style="left:619px;top:195px;">
-  <div class="phone-inner">
+  <!-- ── BRIDGE PHONE ── -->
+  <div class="phone bridge-node" id="node-phone-bridge" style="left:413px;top:152px;">
     <div class="ph-notch"></div>
     <div class="ph-screen">
-      <div class="ph-sig on"><span></span><span></span><span></span><span></span></div>
-      <div class="ph-label">phone-bridge</div>
+      <div class="ph-signal"><span></span><span></span><span></span><span></span></div>
+      <div class="ph-name">phone-bridge</div>
       <div class="ph-badge on">4G ONLINE</div>
       <div class="ph-pkts" id="pkts-phone-bridge"></div>
     </div>
     <div class="ph-home"></div>
   </div>
-  <div class="ph-devname" style="color:#22c55e;text-shadow:0 0 10px rgba(34,197,94,.4)">phone-bridge</div>
-</div>
 
-<!-- ALICE -->
-<div class="phone" id="node-phone-alice" style="left:150px;top:420px;">
-  <div class="phone-inner">
+  <!-- ── ALICE PHONE ── -->
+  <div class="phone offline" id="node-phone-alice" style="left:111px;top:309px;">
     <div class="ph-notch"></div>
     <div class="ph-screen">
-      <div class="ph-sig off"><span></span><span></span><span></span><span></span></div>
-      <div class="ph-label">phone-alice</div>
-      <div class="ph-badge off">OFFLINE</div>
+      <div class="ph-name">phone-alice</div>
+      <div class="ph-badge off">NO SIGNAL</div>
       <div class="ph-pkts" id="pkts-phone-alice"></div>
     </div>
     <div class="ph-home"></div>
   </div>
-  <div class="ph-devname">phone-alice</div>
-</div>
 
-<!-- STRANGER-1 -->
-<div class="phone" id="node-phone-stranger1" style="left:450px;top:510px;">
-  <div class="phone-inner">
+  <!-- ── STRANGER-1 ── -->
+  <div class="phone offline" id="node-phone-stranger1" style="left:338px;top:391px;">
     <div class="ph-notch"></div>
     <div class="ph-screen">
-      <div class="ph-sig off"><span></span><span></span><span></span><span></span></div>
-      <div class="ph-label">stranger-1</div>
-      <div class="ph-badge off">OFFLINE</div>
+      <div class="ph-name">stranger-1</div>
+      <div class="ph-badge off">NO SIGNAL</div>
       <div class="ph-pkts" id="pkts-phone-stranger1"></div>
     </div>
     <div class="ph-home"></div>
   </div>
-  <div class="ph-devname">stranger-1</div>
-</div>
 
-<!-- STRANGER-2 -->
-<div class="phone" id="node-phone-stranger2" style="left:790px;top:510px;">
-  <div class="phone-inner">
+  <!-- ── STRANGER-2 ── -->
+  <div class="phone offline" id="node-phone-stranger2" style="left:678px;top:309px;">
     <div class="ph-notch"></div>
     <div class="ph-screen">
-      <div class="ph-sig off"><span></span><span></span><span></span><span></span></div>
-      <div class="ph-label">stranger-2</div>
-      <div class="ph-badge off">OFFLINE</div>
+      <div class="ph-name">stranger-2</div>
+      <div class="ph-badge off">NO SIGNAL</div>
       <div class="ph-pkts" id="pkts-phone-stranger2"></div>
     </div>
     <div class="ph-home"></div>
   </div>
-  <div class="ph-devname">stranger-2</div>
-</div>
 
-<!-- STRANGER-3 -->
-<div class="phone" id="node-phone-stranger3" style="left:1060px;top:420px;">
-  <div class="phone-inner">
-    <div class="ph-notch"></div>
-    <div class="ph-screen">
-      <div class="ph-sig off"><span></span><span></span><span></span><span></span></div>
-      <div class="ph-label">stranger-3</div>
-      <div class="ph-badge off">OFFLINE</div>
-      <div class="ph-pkts" id="pkts-phone-stranger3"></div>
-    </div>
-    <div class="ph-home"></div>
+  <!-- Packet animation SVG (top layer) -->
+  <svg id="anim-svg" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:30;pointer-events:none;overflow:visible">
+    <defs>
+      <filter id="pkt-glow"><feGaussianBlur stdDeviation="4" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+  </svg>
+
+  <!-- Idempotency counter chip -->
+  <div style="position:absolute;top:14px;left:14px;background:rgba(7,9,15,.85);border:1px solid var(--border);
+              border-radius:8px;padding:8px 12px;font-size:11px;z-index:5;">
+    <span style="color:var(--muted)">Idempotency cache: </span>
+    <span id="cache-count" style="color:var(--cyan);font-family:var(--mono);font-weight:700">0</span>
+    <span style="color:var(--muted)"> packets</span>
   </div>
-  <div class="ph-devname">stranger-3</div>
-</div>
 
-<!-- Animated SVG layer -->
-<svg id="anim-svg"></svg>
-
-<!-- Cache chip -->
-<div class="cache-chip">
-  <span style="color:var(--muted)">Idempotency cache:</span>
-  <span id="cache-count" style="color:var(--cyan);font-family:var(--mono);font-weight:700;margin-left:5px">0</span>
-  <span style="color:var(--muted)"> packets</span>
-</div>
-
-<!-- Legend -->
-<div class="legend">
-  <div class="leg"><span class="leg-l" style="border-top:2px dashed #3b82f6;background:transparent"></span>4G Internet</div>
-  <div class="leg"><span class="leg-l" style="background:#16243a"></span>BT / WiFi-Direct</div>
-  <div class="leg"><span class="leg-d" style="background:radial-gradient(circle,#bfdbfe,#1d4ed8);box-shadow:0 0 8px #3b82f6"></span>Packet in flight</div>
-  <div class="leg"><span class="leg-d" style="background:radial-gradient(circle,#dcfce7,#15803d);box-shadow:0 0 8px #22c55e"></span>Settling to server</div>
-</div>
+  <!-- Legend -->
+  <div class="canvas-legend" style="z-index:5">
+    <div class="leg-row"><span class="leg-line" style="background:#1d4ed8;border-top:2px dashed #1d4ed8"></span>4G Internet</div>
+    <div class="leg-row"><span class="leg-line" style="background:#1a2540"></span>BT / WiFi-Direct</div>
+    <div class="leg-row"><span class="leg-dot" style="background:radial-gradient(#60a5fa,#2563eb);box-shadow:0 0 6px #3b82f6"></span>Payment Packet</div>
+    <div class="leg-row"><span class="leg-dot" style="background:#22c55e;box-shadow:0 0 6px #22c55e"></span>Settled</div>
+  </div>
 
 </div><!-- /canvas -->
+</div><!-- /canvas-wrap -->
+
+<!-- ══════════════════ ACCOUNT BALANCES ══════════════════ -->
+<div class="bal-strip" id="bal-strip">
+  <div class="bal-tile">
+    <div class="bal-avatar" style="background:rgba(59,130,246,.15);color:#60a5fa">A</div>
+    <div class="bal-info"><div class="vpa">alice@demo</div><div class="amount" id="bal-alice">₹5000.00</div><div class="bal-delta" id="d-alice"></div></div>
+  </div>
+  <div class="bal-tile">
+    <div class="bal-avatar" style="background:rgba(34,197,94,.15);color:#4ade80">B</div>
+    <div class="bal-info"><div class="vpa">bob@demo</div><div class="amount" id="bal-bob">₹1000.00</div><div class="bal-delta" id="d-bob"></div></div>
+  </div>
+  <div class="bal-tile">
+    <div class="bal-avatar" style="background:rgba(245,158,11,.15);color:#fbbf24">C</div>
+    <div class="bal-info"><div class="vpa">carol@demo</div><div class="amount" id="bal-carol">₹2500.00</div><div class="bal-delta" id="d-carol"></div></div>
+  </div>
+  <div class="bal-tile">
+    <div class="bal-avatar" style="background:rgba(239,68,68,.15);color:#f87171">D</div>
+    <div class="bal-info"><div class="vpa">dave@demo</div><div class="amount" id="bal-dave">₹500.00</div><div class="bal-delta" id="d-dave"></div></div>
+  </div>
 </div>
 
-<!-- ══ BALANCES ══ -->
-<div class="bal-strip">
-  <div class="bal-tile">
-    <div class="bal-av" style="background:rgba(59,130,246,.12);color:#60a5fa">A</div>
-    <div><div class="bal-vpa">alice@demo</div><div class="bal-amt" id="bal-alice">₹5000.00</div><div class="bal-delta" id="d-alice"></div></div>
-  </div>
-  <div class="bal-tile">
-    <div class="bal-av" style="background:rgba(34,197,94,.12);color:#4ade80">B</div>
-    <div><div class="bal-vpa">bob@demo</div><div class="bal-amt" id="bal-bob">₹1000.00</div><div class="bal-delta" id="d-bob"></div></div>
-  </div>
-  <div class="bal-tile">
-    <div class="bal-av" style="background:rgba(245,158,11,.12);color:#fbbf24">C</div>
-    <div><div class="bal-vpa">carol@demo</div><div class="bal-amt" id="bal-carol">₹2500.00</div><div class="bal-delta" id="d-carol"></div></div>
-  </div>
-  <div class="bal-tile">
-    <div class="bal-av" style="background:rgba(239,68,68,.12);color:#f87171">D</div>
-    <div><div class="bal-vpa">dave@demo</div><div class="bal-amt" id="bal-dave">₹500.00</div><div class="bal-delta" id="d-dave"></div></div>
-  </div>
-</div>
-
-<!-- ══ CONTROLS ══ -->
+<!-- ══════════════════ CONTROLS ══════════════════ -->
 <div class="main">
 <div class="step-row">
-  <div class="sc" id="sc1">
-    <div class="sc-hdr">
-      <span class="sc-num" style="background:var(--blue);color:white">1</span>
-      <span class="sc-title">Compose &amp; Encrypt Payment</span>
+
+  <!-- STEP 1 -->
+  <div class="step-card" id="sc1">
+    <div style="display:flex;align-items:center;margin-bottom:6px">
+      <span class="step-num">1</span><span class="step-title">Compose &amp; Encrypt Payment</span>
     </div>
-    <p class="sc-desc">Sender's phone generates a random <strong>AES-256-GCM</strong> key, encrypts the UPI payload, then RSA-OAEP wraps the session key. Sealed <code style="color:var(--cyan);font-size:10.5px">MeshPacket</code> (TTL=5) injected into <em>phone-alice</em>.</p>
+    <p class="step-desc">
+      The sender's phone generates a random <strong>AES-256-GCM</strong> key, encrypts the payment,
+      then wraps the AES key with the server's <strong>RSA-2048 OAEP</strong> public key.
+      Result is a <code style="font-size:10.5px;color:var(--cyan)">MeshPacket</code> injected into
+      <em>phone-alice</em>.
+    </p>
     <div class="form-row">
-      <select id="senderVpa" onchange="syncRecv()">
-        <option>alice@demo</option><option>bob@demo</option><option>carol@demo</option><option>dave@demo</option>
+      <select id="senderVpa" onchange="syncReceivers()">
+        <option>alice@demo</option><option>bob@demo</option>
+        <option>carol@demo</option><option>dave@demo</option>
       </select>
-      <span style="color:var(--muted);font-size:16px">→</span>
+      <span class="arr">→</span>
       <select id="receiverVpa">
-        <option>bob@demo</option><option>carol@demo</option><option>alice@demo</option><option>dave@demo</option>
+        <option>bob@demo</option><option>carol@demo</option>
+        <option>alice@demo</option><option>dave@demo</option>
       </select>
     </div>
     <div class="form-row">
-      <span class="lbl">₹</span><input type="number" id="amount" value="500" style="width:82px">
-      <span class="lbl">PIN</span><input type="text" id="pin" value="1234" style="width:62px" maxlength="4">
+      <span class="lbl">₹</span>
+      <input type="number" id="amount" value="500" style="width:85px">
+      <span class="lbl">PIN</span>
+      <input type="text" id="pin" value="1234" style="width:65px" maxlength="4">
     </div>
     <button class="btn btn-blue" id="btn-send" onclick="doSend()">🔐 Encrypt &amp; Inject</button>
-    <div class="xp" id="xp1"><strong>Done:</strong> Fresh AES-256-GCM key generated in RAM. UPI payload encrypted. AES key RSA-OAEP wrapped — only the server's private key can open it. <code>MeshPacket</code> (ciphertext + wrapped key + TTL=5) now on <code>phone-alice</code>.</div>
+    <div class="explainer" id="exp1">
+      <strong>What just happened:</strong> A fresh AES-256-GCM key was generated in RAM.
+      The UPI payload (₹ amount, VPAs, PIN hash) was encrypted with it.
+      The AES key was then RSA-OAEP wrapped — only the server's private key can open it.
+      The sealed <code>MeshPacket</code> (ciphertext + wrapped key + TTL=5) now sits on
+      <code>phone-alice</code> waiting to gossip.
+    </div>
   </div>
 
-  <div class="sc" id="sc2">
-    <div class="sc-hdr">
-      <span class="sc-num" style="background:var(--cyan);color:#082f49">2</span>
-      <span class="sc-title">Gossip Through the Mesh</span>
+  <!-- STEP 2 -->
+  <div class="step-card" id="sc2">
+    <div style="display:flex;align-items:center;margin-bottom:6px">
+      <span class="step-num" style="background:var(--cyan);color:#082f49">2</span>
+      <span class="step-title">Gossip Through the Mesh</span>
     </div>
-    <p class="sc-desc">Each phone randomly picks a neighbour and forwards any packets it holds. <strong>TTL</strong> decrements every hop — epidemic broadcast. Run multiple rounds to spread toward the bridge.</p>
-    <div class="stat-row" id="gossip-stats">
-      <div class="chip"><div class="v" id="g-tx">0</div><div class="l">Transfers</div></div>
-      <div class="chip"><div class="v" id="g-dev">0</div><div class="l">Devices</div></div>
-      <div class="chip"><div class="v" id="g-total">0</div><div class="l">Copies</div></div>
+    <p class="step-desc">
+      Each phone picks a random neighbour and forwards any packets it holds.
+      <strong>TTL</strong> decrements each hop — like epidemic broadcast.
+      Run multiple rounds to spread the packet closer to the bridge node.
+    </p>
+    <div class="stat-row" id="gossip-stats" style="display:none">
+      <div class="stat-chip"><div class="v" id="g-tx">0</div><div class="l">Transfers</div></div>
+      <div class="stat-chip"><div class="v" id="g-dev">0</div><div class="l">Devices w/ pkt</div></div>
+      <div class="stat-chip"><div class="v" id="g-total">0</div><div class="l">Total pkt copies</div></div>
     </div>
     <button class="btn btn-cyan" id="btn-gossip" onclick="doGossip()">🔄 Run Gossip Round</button>
-    <div class="xp" id="xp2"><strong>Done:</strong> Phones forwarded packets to neighbours. TTL decremented per hop. The glowing blue dots moved between phone screens — each is your encrypted packet propagating via BT/WiFi-Direct.</div>
+    <div class="explainer" id="exp2">
+      <strong>What just happened:</strong> Each offline phone checked its neighbour list and
+      forwarded packets the neighbour didn't already hold. TTL decremented per hop.
+      Watch the glowing blue dots move between phone screens — each dot is a copy of your
+      encrypted packet propagating through the mesh.
+    </div>
   </div>
 
-  <div class="sc" id="sc3">
-    <div class="sc-hdr">
-      <span class="sc-num" style="background:var(--green);color:#052e16">3</span>
-      <span class="sc-title">Bridge Uploads to Backend</span>
+  <!-- STEP 3 -->
+  <div class="step-card" id="sc3">
+    <div style="display:flex;align-items:center;margin-bottom:6px">
+      <span class="step-num" style="background:var(--green);color:#052e16">3</span>
+      <span class="step-title">Bridge Uploads to Backend</span>
     </div>
-    <p class="sc-desc"><em>phone-bridge</em> gets 4G signal and POSTs all held packets to <code style="color:var(--cyan);font-size:10.5px">/api/bridge/ingest</code> in <strong>parallel</strong>. Server RSA-unwraps the AES key, decrypts, deduplicates, and settles.</p>
+    <p class="step-desc">
+      <em>phone-bridge</em> gets 4G signal and POSTs all held packets to
+      <code style="font-size:10.5px;color:var(--cyan)">/api/bridge/ingest</code> in <strong>parallel</strong>.
+      The server decrypts, verifies, deduplicates via hash, and settles the transaction.
+    </p>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-green" id="btn-flush" onclick="doFlush()">📡 Bridge Upload</button>
       <button class="btn btn-red btn-sm" onclick="doReset()">🗑 Reset Mesh</button>
     </div>
-    <div class="xp" id="xp3"><strong>Done:</strong> Bridge uploaded packets in parallel. Server unwrapped the RSA-sealed AES key, decrypted payload, verified PIN, checked idempotency hash. <strong>First arrival → SETTLED</strong>. Duplicates → <span style="color:var(--yellow)">DUPLICATE_DROPPED</span>.</div>
+    <div class="explainer" id="exp3">
+      <strong>What just happened:</strong> Bridge nodes uploaded packets using Java's
+      <code>parallelStream()</code>. The server unwrapped the RSA-sealed AES key,
+      decrypted the payload, verified PIN, then checked the packet hash in the
+      idempotency cache. <strong>First arrival → SETTLED</strong> (balances updated, written to DB via JPA + JDBC).
+      Duplicate arrivals → <span style="color:var(--yellow)">DUPLICATE_DROPPED</span>.
+    </div>
   </div>
-</div>
 
+</div><!-- /step-row -->
+
+<!-- ══════════════════ BOTTOM: LEDGER + LOG ══════════════════ -->
 <div class="bot-grid">
+
   <div class="card">
     <div class="card-hdr">
       <span>📜 Transaction Ledger</span>
@@ -487,354 +465,344 @@ tr:hover td{background:rgba(255,255,255,.012);}
     </div>
     <div style="overflow-x:auto">
       <table id="tx-table">
-        <thead><tr><th>#</th><th>From</th><th>To</th><th>Amount</th><th>Status</th><th>Hops</th><th>Time</th></tr></thead>
-        <tbody><tr><td colspan="7" class="empty">No transactions yet</td></tr></tbody>
+        <thead><tr>
+          <th>#</th><th>From</th><th>To</th><th>Amount</th>
+          <th>Status</th><th>Hops</th><th>Time</th>
+        </tr></thead>
+        <tbody><tr><td colspan="7" class="empty">No transactions yet — complete a demo flow</td></tr></tbody>
       </table>
     </div>
   </div>
+
   <div class="card">
     <div class="card-hdr">
       <span>🖥 Activity Log</span>
       <span>
-        <a href="/servlet/audit" target="_blank">Audit ↗</a>&nbsp;&nbsp;
+        <a href="/servlet/audit" target="_blank">Audit File ↗</a>
+        &nbsp;&nbsp;
         <a href="/servlet/health" target="_blank" style="color:var(--green)">Health ↗</a>
       </span>
     </div>
     <div id="log"></div>
     <div class="divider"></div>
-    <div style="font-size:10.5px;color:var(--muted)">Servlets bypass Spring MVC:
+    <div style="font-size:10.5px;color:var(--muted)">
+      Servlet endpoints registered via <code style="color:var(--cyan)">ServletContext</code>, bypassing Spring MVC dispatcher:
       <code style="color:var(--cyan)">/servlet/health</code> ·
       <code style="color:var(--cyan)">/servlet/export</code> ·
       <code style="color:var(--cyan)">/servlet/audit</code>
     </div>
   </div>
+
 </div>
 
+<!-- ══════════════════ TECH REFERENCE ══════════════════ -->
 <div class="card" style="margin-top:16px">
   <div class="card-hdr"><span>⚙️ Implementation Reference</span></div>
   <div class="tech-grid">
-    <div class="tb"><div class="tb-t">Hybrid Crypto</div><p>RSA-2048 OAEP-SHA256 wraps a per-packet AES-256-GCM session key.<br><code>ServerKeyHolder</code> generates RSA keypair at startup. Zero plaintext stored.</p></div>
-    <div class="tb"><div class="tb-t">Plain JDBC — LedgerJdbcDao</div><p>Raw <code>PreparedStatement</code> (not JPA) for audit queries.<br><code>summary()</code> · <code>findBySender()</code> · <code>databaseInfo()</code><br>Bind-parameter protection verified by integration test.</p></div>
-    <div class="tb"><div class="tb-t">File Handling</div><p><code>LedgerFileService</code> — live CSV export to disk.<br><code>AuditLogService</code> — rotating append-only event log.<br>Path-traversal blocked in servlet.</p></div>
-    <div class="tb"><div class="tb-t">Custom Servlets</div><p><code>HealthServlet</code> — DB ping + uptime<br><code>LedgerExportServlet</code> — stream / save / list / serve<br><code>AuditLogServlet</code> — tail log lines<br><code>RequestLogFilter</code> — injects <code>X-Request-Id</code></p></div>
-    <div class="tb"><div class="tb-t">Idempotency</div><p>Time-bounded <code>ConcurrentHashMap</code> of packet hashes.<br>Bridge uploads run in <code>parallelStream()</code>.<br>First arrival settles; duplicates → DROPPED.</p></div>
-    <div class="tb"><div class="tb-t">Gossip Simulator</div><p>5 <code>VirtualDevice</code> nodes: 1 bridge + 4 offline.<br><code>BridgeIngestionService</code> — decrypt, verify, settle.<br><code>DemoService</code> — builds signed encrypted packets.</p></div>
+    <div class="tech-block">
+      <div class="tech-title">Crypto — HybridCryptoService</div>
+      <p>RSA-2048 OAEP-SHA256 encrypts a per-packet AES-256-GCM session key.<br>
+         <code>ServerKeyHolder</code> generates the keypair at startup.<br>
+         Only the server private key can decrypt payment data.</p>
+    </div>
+    <div class="tech-block">
+      <div class="tech-title">Plain JDBC — LedgerJdbcDao</div>
+      <p>Uses raw <code>PreparedStatement</code> (not JPA).<br>
+         Methods: <code>summary()</code>, <code>findBySender()</code>, <code>databaseInfo()</code><br>
+         SQL-injection safe via bind parameters (covered by test).</p>
+    </div>
+    <div class="tech-block">
+      <div class="tech-title">File Handling</div>
+      <p><code>LedgerFileService</code> — streams live CSV exports to disk.<br>
+         <code>AuditLogService</code> — appends every ingest event to a rotating log.<br>
+         Path traversal blocked in <code>LedgerExportServlet</code>.</p>
+    </div>
+    <div class="tech-block">
+      <div class="tech-title">Custom Servlets</div>
+      <p><code>HealthServlet</code> — DB ping + uptime JSON<br>
+         <code>LedgerExportServlet</code> — stream / save / list / serve CSV<br>
+         <code>AuditLogServlet</code> — tail log lines<br>
+         <code>RequestLogFilter</code> — injects <code>X-Request-Id</code></p>
+    </div>
+    <div class="tech-block">
+      <div class="tech-title">Idempotency</div>
+      <p><code>IdempotencyService</code> holds a time-bounded <code>ConcurrentHashMap</code>
+         of packet hashes. Bridge nodes upload in parallel — only the first arrival settles,
+         the rest return <code>DUPLICATE_DROPPED</code>.</p>
+    </div>
+    <div class="tech-block">
+      <div class="tech-title">Gossip Simulator</div>
+      <p><code>MeshSimulatorService</code> — 4 <code>VirtualDevice</code> nodes.<br>
+         <code>BridgeIngestionService</code> — decrypts, verifies, deduplicates, settles.<br>
+         <code>DemoService</code> — builds signed + encrypted packets.</p>
+    </div>
   </div>
 </div>
-</div>
 
+</div><!-- /main -->
+
+<!-- ══════════════════ SCRIPT ══════════════════ -->
 <script>
-/* ── Node centers (left + width/2, top + height/2) ── */
+/* ─── Node center coordinates (matches CSS positions) ─── */
 const N = {
-  server:           {x:660, y:65},
-  'phone-bridge':   {x:660, y:264},
-  'phone-alice':    {x:191, y:489},
-  'phone-stranger1':{x:491, y:579},
-  'phone-stranger2':{x:831, y:579},
-  'phone-stranger3':{x:1101,y:489},
+  server:          { x:450, y:58 },
+  'phone-bridge':  { x:450, y:215 },
+  'phone-alice':   { x:148, y:372 },
+  'phone-stranger1':{ x:375, y:454 },
+  'phone-stranger2':{ x:715, y:372 },
 };
 
-/* Line IDs: [base, active-glow] */
-const LINES = {
-  'phone-bridge|phone-alice':       ['cl-ba', 'al-ba'],
-  'phone-bridge|phone-stranger1':   ['cl-bs1','al-bs1'],
-  'phone-bridge|phone-stranger2':   ['cl-bs2','al-bs2'],
-  'phone-bridge|phone-stranger3':   ['cl-bs3','al-bs3'],
-  'phone-alice|phone-stranger1':    ['cl-as1','al-as1'],
-  'phone-stranger1|phone-stranger2':['cl-12', 'al-12'],
-  'phone-stranger2|phone-stranger3':['cl-23', 'al-23'],
-  'phone-alice|phone-stranger2':    ['cl-a2', 'al-a2'],
+const MESH_LINES = {
+  'phone-bridge|phone-alice':    'cl-bridge-alice',
+  'phone-bridge|phone-stranger1':'cl-bridge-s1',
+  'phone-bridge|phone-stranger2':'cl-bridge-s2',
+  'phone-alice|phone-stranger1': 'cl-alice-s1',
+  'phone-stranger1|phone-stranger2':'cl-s1-s2',
 };
 
-/* All mesh edges available for gossip animation */
-const ALL_EDGES = [
-  ['phone-bridge','phone-alice'],
-  ['phone-bridge','phone-stranger1'],
-  ['phone-bridge','phone-stranger2'],
-  ['phone-bridge','phone-stranger3'],
-  ['phone-alice','phone-stranger1'],
-  ['phone-stranger1','phone-stranger2'],
-  ['phone-stranger2','phone-stranger3'],
-  ['phone-alice','phone-stranger2'],
-];
+let prevPkts = {};
+let prevBals = {};
 
-let prevPkts={}, prevBals={};
-let inetFlowOffset=0;
-
-/* ── Animate internet line flow ── */
-(function tickInet(){
-  const el=document.getElementById('inet-flow');
-  if(el){ inetFlowOffset-=1.2; el.setAttribute('stroke-dashoffset',inetFlowOffset); }
-  requestAnimationFrame(tickInet);
-})();
-
-/* ── Log ── */
-function log(msg,t='ok'){
+/* ─── LOG ─── */
+function log(msg, t='ok'){
   const el=document.getElementById('log');
   const ts=new Date().toLocaleTimeString();
-  const c={ok:'log-ok',dup:'log-dup',err:'log-err',info:'log-info'}[t]||'log-ok';
-  el.innerHTML=`<span class="log-ts">[${ts}]</span> <span class="${c}">${msg}</span>\n`+el.innerHTML;
+  const cls=t==='dup'?'log-dup':t==='err'?'log-err':t==='info'?'log-info':'log-ok';
+  el.innerHTML=`<span class="log-ts">[${ts}]</span> <span class="${cls}">${msg}</span>\n`+el.innerHTML;
 }
 
-/* ── Packet animation ── */
-function animPkt(fromId,toId,{color='blue',delay=0,count=1,speed=1}={}){
-  const svg=document.getElementById('anim-svg');
-  const f=N[fromId],t=N[toId];
-  if(!f||!t)return;
-  for(let i=0;i<count;i++){
-    setTimeout(()=>{
-      const dur=(0.5+Math.random()*0.2)/speed;
-      const jx=(Math.random()-.5)*18, jy=(Math.random()-.5)*18;
-      const cx=(f.x+t.x)/2+jx, cy=(f.y+t.y)/2+jy;
-      const path=`M${f.x},${f.y} Q${cx},${cy} ${t.x},${t.y}`;
-      const fillId=color==='green'?'url(#pkt-green-g)':'url(#pkt-blue-g)';
-
-      /* Tail blob */
-      const tail=mkel('circle',{r:'5',fill:fillId,opacity:'.3',filter:'url(#glow-pkt)'});
-      addAM(tail,dur+.07,path);
-
-      /* Main dot */
-      const dot=mkel('circle',{r:'9',fill:fillId,filter:'url(#glow-pkt)'});
-      addAM(dot,dur,path);
-
-      /* Inner bright core */
-      const core=mkel('circle',{r:'4',fill:color==='green'?'#bbf7d0':'#e0f2fe',opacity:'.85'});
-      addAM(core,dur,path);
-
-      const g=document.createElementNS('http://www.w3.org/2000/svg','g');
-      g.append(tail,dot,core);
-      svg.appendChild(g);
-      glowLine(fromId,toId,Math.round(dur*1000));
-      setTimeout(()=>{flashPhone(toId);spawnRipple(toId);g.remove();},dur*1000+30);
-    },delay+i*160);
-  }
+/* ─── PACKET ANIMATION ─── */
+function animPkt(fromId, toId, color='#3b82f6', delay=0){
+  const svg = document.getElementById('anim-svg');
+  const f=N[fromId], t=N[toId];
+  if(!f||!t) return;
+  setTimeout(()=>{
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('r','7');
+    c.setAttribute('fill',color);
+    c.setAttribute('filter','url(#pkt-glow)');
+    const am = document.createElementNS('http://www.w3.org/2000/svg','animateMotion');
+    am.setAttribute('dur','0.7s');
+    am.setAttribute('fill','remove');
+    am.setAttribute('calcMode','spline');
+    am.setAttribute('keySplines','0.25 0.46 0.45 0.94');
+    am.setAttribute('path',`M${f.x},${f.y} L${t.x},${t.y}`);
+    g.appendChild(c); g.appendChild(am);
+    svg.appendChild(g);
+    flashLine(fromId, toId, color);
+    setTimeout(()=>g.remove(), 800);
+  }, delay);
 }
 
-function mkel(tag,attrs){
-  const el=document.createElementNS('http://www.w3.org/2000/svg',tag);
-  Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));
-  return el;
-}
-function addAM(el,dur,path){
-  const am=document.createElementNS('http://www.w3.org/2000/svg','animateMotion');
-  am.setAttribute('dur',dur+'s');
-  am.setAttribute('fill','remove');
-  am.setAttribute('calcMode','spline');
-  am.setAttribute('keySplines','0.4 0 0.2 1');
-  am.setAttribute('path',path);
-  el.appendChild(am);
-}
-
-/* ── Glow the connection line ── */
-function glowLine(a,b,ms=700){
-  const key=`${a}|${b}`, rkey=`${b}|${a}`;
-  const ids=LINES[key]||LINES[rkey];
-  if(!ids)return;
-  const al=document.getElementById(ids[1]);
-  if(!al)return;
-  al.style.opacity='1';
-  al.style.strokeWidth='3.5';
-  clearTimeout(al._t);
-  al._t=setTimeout(()=>{al.style.opacity='0';},ms);
+function flashLine(a, b, color='#3b82f6'){
+  const key = `${a}|${b}`;
+  const rkey = `${b}|${a}`;
+  const lineId = MESH_LINES[key] || MESH_LINES[rkey];
+  if(!lineId) return;
+  const line = document.getElementById(lineId);
+  if(!line) return;
+  const prev = line.getAttribute('stroke');
+  const prevW = line.getAttribute('stroke-width');
+  line.setAttribute('stroke', color);
+  line.setAttribute('stroke-width','3');
+  line.setAttribute('opacity','1');
+  setTimeout(()=>{
+    line.setAttribute('stroke','#1a2540');
+    line.setAttribute('stroke-width','1.5');
+    line.setAttribute('opacity','1');
+  }, 700);
 }
 
-/* ── Phone flash ── */
-function flashPhone(id,cls='rx-flash'){
-  const el=document.getElementById('node-'+id);
-  if(!el)return;
-  el.classList.remove('rx-flash','settle-flash');
-  void el.offsetWidth;
+function flashPhone(deviceId, cls='flash'){
+  const el = document.getElementById('node-'+deviceId);
+  if(!el) return;
+  el.classList.remove(cls);
+  void el.offsetWidth; // reflow
   el.classList.add(cls);
-  setTimeout(()=>el.classList.remove(cls),1000);
+  setTimeout(()=>el.classList.remove(cls), 700);
 }
 
-/* ── Ripple ring ── */
-function spawnRipple(deviceId){
-  const el=document.getElementById('node-'+deviceId);
-  if(!el)return;
-  const r=document.createElement('div');
-  r.className='ripple';
-  const w=el.offsetWidth,h=el.offsetHeight;
-  r.style.cssText=`width:${w}px;height:${h}px;animation:rippleOut .72s ease-out forwards;`;
-  el.style.position='relative';
-  el.appendChild(r);
-  setTimeout(()=>r.remove(),780);
-}
-
-/* ── Server burst ── */
 function flashServer(){
-  const el=document.getElementById('node-server');
-  el.classList.remove('settled');
-  void el.offsetWidth;
+  const el = document.getElementById('node-server');
   el.classList.add('settled');
-  setTimeout(()=>el.classList.remove('settled'),1200);
-  for(let i=0;i<4;i++)
-    animPkt('server','phone-bridge',{color:'green',delay:i*100,count:1,speed:1.3});
+  setTimeout(()=>el.classList.remove('settled'), 1100);
 }
 
-/* ── Gossip animation ── */
-function animateGossip(transfers){
-  const n=Math.max(2,Math.min(transfers,ALL_EDGES.length));
-  const shuffled=[...ALL_EDGES].sort(()=>Math.random()-.5).slice(0,n);
-  shuffled.forEach(([a,b],i)=>{
-    const cnt=Math.random()<.45?2:1;
-    animPkt(a,b,{color:'blue',delay:i*180,count:cnt});
-    if(transfers>3 && Math.random()<.4)
-      animPkt(b,a,{color:'blue',delay:i*180+320,count:1});
-  });
-}
-
-/* ── Refresh state from API ── */
+/* ─── REFRESH ─── */
 async function refresh(){
   try{
-    const [mesh,accs,txs]=await Promise.all([
+    const [mesh, accs, txs] = await Promise.all([
       fetch('/api/mesh/state').then(r=>r.json()),
       fetch('/api/accounts').then(r=>r.json()),
       fetch('/api/transactions').then(r=>r.json()),
     ]);
-    document.getElementById('cache-count').textContent=mesh.idempotencyCacheSize;
+
+    /* idempotency cache */
+    document.getElementById('cache-count').textContent = mesh.idempotencyCacheSize;
+
+    /* phone packet dots */
     mesh.devices.forEach(d=>{
-      const area=document.getElementById('pkts-'+d.deviceId);
-      if(!area)return;
-      const prev=prevPkts[d.deviceId]||0;
-      if(d.packetCount>prev){flashPhone(d.deviceId,'rx-flash');spawnRipple(d.deviceId);}
-      prevPkts[d.deviceId]=d.packetCount;
-      area.innerHTML=Array.from({length:d.packetCount},(_,i)=>
-        `<div class="pkt-pip" title="${(d.packetIds||[])[i]||''}"></div>`).join('');
+      const area = document.getElementById('pkts-'+d.deviceId);
+      if(!area) return;
+      const gained = d.packetCount > (prevPkts[d.deviceId]||0);
+      if(gained && d.packetCount > 0) flashPhone(d.deviceId);
+      prevPkts[d.deviceId] = d.packetCount;
+      area.innerHTML = Array.from({length:d.packetCount},(_,i)=>
+        `<div class="pkt-pip" title="${d.packetIds[i]||''}"></div>`).join('');
     });
-    const bm={'alice@demo':'alice','bob@demo':'bob','carol@demo':'carol','dave@demo':'dave'};
+
+    /* balances */
+    const balMap = {'alice@demo':'alice','bob@demo':'bob','carol@demo':'carol','dave@demo':'dave'};
     accs.forEach(a=>{
-      const k=bm[a.vpa];if(!k)return;
-      const bal=parseFloat(a.balance).toFixed(2);
-      const prev=prevBals[a.vpa];
-      const bEl=document.getElementById('bal-'+k);
-      const dEl=document.getElementById('d-'+k);
-      if(bEl)bEl.textContent='₹'+bal;
-      if(dEl&&prev!==undefined&&prev!==bal){
-        const diff=(parseFloat(bal)-parseFloat(prev)).toFixed(2);
-        const up=parseFloat(diff)>0;
-        dEl.innerHTML=`<span style="color:${up?'var(--green)':'var(--red)'}">${up?'▲':'▼'} ₹${Math.abs(diff).toFixed(2)}</span>`;
-        setTimeout(()=>{if(dEl)dEl.innerHTML='';},4200);
+      const key = balMap[a.vpa];
+      if(!key) return;
+      const bal = parseFloat(a.balance).toFixed(2);
+      const prev = prevBals[a.vpa];
+      const balEl = document.getElementById('bal-'+key);
+      const dEl   = document.getElementById('d-'+key);
+      if(balEl) balEl.textContent = '₹'+bal;
+      if(dEl && prev !== undefined && prev !== bal){
+        const diff = (parseFloat(bal)-parseFloat(prev)).toFixed(2);
+        const up = parseFloat(diff)>0;
+        dEl.innerHTML = `<span style="color:${up?'var(--green)':'var(--red)'}">${up?'▲':'▼'} ₹${Math.abs(diff).toFixed(2)}</span>`;
+        setTimeout(()=>{ if(dEl) dEl.innerHTML=''; }, 4000);
       }
-      prevBals[a.vpa]=bal;
+      prevBals[a.vpa] = bal;
     });
-    const tb=document.querySelector('#tx-table tbody');
-    if(!txs.length){
-      tb.innerHTML='<tr><td colspan="7" class="empty">No transactions yet</td></tr>';
+
+    /* ledger */
+    const tbody = document.querySelector('#tx-table tbody');
+    if(txs.length===0){
+      tbody.innerHTML='<tr><td colspan="7" class="empty">No transactions yet</td></tr>';
     } else {
-      tb.innerHTML=txs.map(t=>`<tr>
-        <td class="mono" style="color:var(--muted)">#${t.id}</td>
-        <td class="mono" style="font-size:10.5px">${t.senderVpa}</td>
-        <td class="mono" style="font-size:10.5px">${t.receiverVpa}</td>
-        <td class="mono green">₹${parseFloat(t.amount).toFixed(2)}</td>
-        <td><span class="s-${t.status}">${t.status}</span></td>
-        <td style="color:var(--muted);font-size:10.5px">${t.hopCount}h</td>
-        <td style="color:var(--muted);font-size:10.5px">${new Date(t.settledAt).toLocaleTimeString()}</td>
-      </tr>`).join('');
+      tbody.innerHTML = txs.map(t=>`
+        <tr>
+          <td class="mono" style="color:var(--muted)">#${t.id}</td>
+          <td class="mono" style="font-size:10.5px">${t.senderVpa}</td>
+          <td class="mono" style="font-size:10.5px">${t.receiverVpa}</td>
+          <td class="mono green">₹${parseFloat(t.amount).toFixed(2)}</td>
+          <td><span class="s-${t.status}">${t.status}</span></td>
+          <td style="color:var(--muted);font-size:10.5px">${t.hopCount}h</td>
+          <td style="color:var(--muted);font-size:10.5px">${new Date(t.settledAt).toLocaleTimeString()}</td>
+        </tr>`).join('');
     }
-  }catch(e){}
+  } catch(e){}
 }
 
-/* ── Actions ── */
+/* ─── ACTIONS ─── */
 async function doSend(){
-  const sender=document.getElementById('senderVpa').value;
-  const recv=document.getElementById('receiverVpa').value;
-  if(sender===recv){log('Sender and receiver must differ','err');return;}
+  const sender = document.getElementById('senderVpa').value;
+  const recv   = document.getElementById('receiverVpa').value;
+  if(sender===recv){ log('Sender and receiver must differ','err'); return; }
   const btn=document.getElementById('btn-send');
-  btn.disabled=true;btn.innerHTML='<span class="spin">⏳</span> Encrypting…';
+  btn.disabled=true; btn.innerHTML='<span class="spin">⏳</span> Encrypting…';
   try{
-    const r=await fetch('/api/demo/send',{method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({senderVpa:sender,receiverVpa:recv,
+    const r = await fetch('/api/demo/send',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        senderVpa:sender, receiverVpa:recv,
         amount:parseFloat(document.getElementById('amount').value),
-        pin:document.getElementById('pin').value,ttl:5,startDevice:'phone-alice'})
+        pin:document.getElementById('pin').value,
+        ttl:5, startDevice:'phone-alice'
+      })
     }).then(r=>r.json());
-    log(`🔐 Packet <b>${r.packetId.substring(0,16)}…</b> — AES-256-GCM + RSA-OAEP`,'ok');
+
+    log(`🔐 Packet <b>${r.packetId.substring(0,14)}…</b> — AES-256-GCM + RSA-OAEP`,'ok');
     log(`   Injected at <b>${r.injectedAt}</b>  TTL=${r.ttl}`,'info');
-    log(`   Cipher preview: ${r.ciphertextPreview}`,'info');
-    flashPhone('phone-alice','rx-flash');spawnRipple('phone-alice');
-    lit('sc1');show('xp1');
-    setTimeout(refresh,350);
-  }catch(e){log('Error: '+e.message,'err');}
-  finally{btn.disabled=false;btn.innerHTML='🔐 Encrypt &amp; Inject';}
+    log(`   Cipher: ${r.ciphertextPreview}`,'info');
+
+    // Show packet appearing on alice
+    flashPhone('phone-alice');
+    showExplainer('exp1'); litCard('sc1');
+    refresh();
+  } catch(e){ log('Error: '+e.message,'err'); }
+  finally{ btn.disabled=false; btn.innerHTML='🔐 Encrypt &amp; Inject'; }
 }
 
 async function doGossip(){
   const btn=document.getElementById('btn-gossip');
-  btn.disabled=true;btn.innerHTML='<span class="spin">🔄</span> Gossiping…';
+  btn.disabled=true; btn.innerHTML='<span class="spin">🔄</span> Gossiping…';
   try{
-    const r=await fetch('/api/mesh/gossip',{method:'POST'}).then(r=>r.json());
-    const counts=Object.entries(r.deviceCounts||{});
-    const total=counts.reduce((s,[,v])=>s+v,0);
-    const active=counts.filter(([,v])=>v>0).length;
-    const gs=document.getElementById('gossip-stats');
-    gs.classList.add('show');
-    document.getElementById('g-tx').textContent=r.transfers;
-    document.getElementById('g-dev').textContent=active;
-    document.getElementById('g-total').textContent=total;
-    log(`🔄 Gossip: ${r.transfers} transfer(s) → ${JSON.stringify(r.deviceCounts)}`,'ok');
-    animateGossip(r.transfers);
-    lit('sc2');show('xp2');
-    setTimeout(refresh,650);
-  }catch(e){log('Gossip error: '+e.message,'err');}
-  finally{btn.disabled=false;btn.textContent='🔄 Run Gossip Round';}
+    const r = await fetch('/api/mesh/gossip',{method:'POST'}).then(r=>r.json());
+    const counts = Object.entries(r.deviceCounts);
+    const total  = counts.reduce((s,[,v])=>s+v,0);
+    const active = counts.filter(([,v])=>v>0).length;
+
+    document.getElementById('gossip-stats').style.display='flex';
+    document.getElementById('g-tx').textContent    = r.transfers;
+    document.getElementById('g-dev').textContent   = active;
+    document.getElementById('g-total').textContent = total;
+
+    log(`🔄 Gossip: ${r.transfers} transfer(s) — ${JSON.stringify(r.deviceCounts)}`,'ok');
+
+    // Animate packets along mesh connections proportional to transfers
+    const meshConns = [
+      ['phone-bridge','phone-alice'],
+      ['phone-bridge','phone-stranger1'],
+      ['phone-bridge','phone-stranger2'],
+      ['phone-alice','phone-stranger1'],
+      ['phone-stranger1','phone-stranger2'],
+    ];
+    for(let i=0;i<Math.min(r.transfers+1,meshConns.length);i++){
+      animPkt(meshConns[i][0], meshConns[i][1], '#3b82f6', i*180);
+    }
+
+    showExplainer('exp2'); litCard('sc2');
+    setTimeout(refresh, 500);
+  } catch(e){ log('Gossip error: '+e.message,'err'); }
+  finally{ btn.disabled=false; btn.textContent='🔄 Run Gossip Round'; }
 }
 
 async function doFlush(){
   const btn=document.getElementById('btn-flush');
-  btn.disabled=true;btn.innerHTML='<span class="spin">📡</span> Uploading…';
+  btn.disabled=true; btn.innerHTML='<span class="spin">📡</span> Uploading…';
   try{
-    const r=await fetch('/api/mesh/flush',{method:'POST'}).then(r=>r.json());
+    const r = await fetch('/api/mesh/flush',{method:'POST'}).then(r=>r.json());
     log(`📡 Bridge upload — ${r.uploadsAttempted} attempt(s)`,'ok');
+    let settleCnt=0;
     r.results.forEach((res,i)=>{
       const dup=res.outcome==='DUPLICATE_DROPPED';
-      log(`   ${res.bridgeNode} → ${(res.packetId||'').substring(0,14)}… : ${res.outcome}`+
-          (res.reason?` (${res.reason})`:''),dup?'dup':'ok');
-      const col=res.outcome==='SETTLED'?'green':'blue';
-      animPkt('phone-bridge','server',{color:col,delay:i*260,count:col==='green'?2:1,speed:1.2});
-      if(res.outcome==='SETTLED')
-        setTimeout(()=>{flashServer();flashPhone('phone-bridge','settle-flash');},i*260+950);
+      log(`   ${res.bridgeNode} → <b>${res.packetId}</b>: ${res.outcome}${res.reason?' ('+res.reason+')':''}`, dup?'dup':'ok');
+      const color = res.outcome==='SETTLED'?'#22c55e':'#f59e0b';
+      animPkt('phone-bridge','server',color, i*280);
+      if(res.outcome==='SETTLED'){
+        settleCnt++;
+        setTimeout(()=>{ flashServer(); flashPhone('phone-bridge','settle-flash'); }, i*280+750);
+      }
     });
-    lit('sc3');show('xp3');
-    setTimeout(refresh,1100);
-  }catch(e){log('Flush error: '+e.message,'err');}
-  finally{btn.disabled=false;btn.textContent='📡 Bridge Upload';}
+
+    showExplainer('exp3'); litCard('sc3');
+    setTimeout(refresh, 900);
+  } catch(e){ log('Flush error: '+e.message,'err'); }
+  finally{ btn.disabled=false; btn.textContent='📡 Bridge Upload'; }
 }
 
 async function doReset(){
-  if(!confirm('Reset mesh + idempotency cache?'))return;
+  if(!confirm('Reset mesh + idempotency cache?')) return;
   await fetch('/api/mesh/reset',{method:'POST'});
   log('🗑 Mesh + idempotency cache cleared','info');
-  ['xp1','xp2','xp3'].forEach(id=>document.getElementById(id).classList.remove('show'));
+  ['exp1','exp2','exp3'].forEach(id=>document.getElementById(id).classList.remove('show'));
   ['sc1','sc2','sc3'].forEach(id=>document.getElementById(id).classList.remove('lit'));
-  document.getElementById('gossip-stats').classList.remove('show');
+  document.getElementById('gossip-stats').style.display='none';
   prevPkts={};
   refresh();
 }
 
-function lit(id){document.getElementById(id).classList.add('lit');}
-function show(id){document.getElementById(id).classList.add('show');}
-function syncRecv(){
+/* ─── UI HELPERS ─── */
+function showExplainer(id){ document.getElementById(id).classList.add('show'); }
+function litCard(id){ document.getElementById(id).classList.add('lit'); }
+function syncReceivers(){
   const s=document.getElementById('senderVpa').value;
   const r=document.getElementById('receiverVpa');
   [...r.options].forEach(o=>o.disabled=(o.value===s));
   if(r.value===s) r.value=[...r.options].find(o=>!o.disabled)?.value||'';
 }
 
-syncRecv();
+/* ─── BOOT ─── */
+syncReceivers();
 refresh();
-setInterval(refresh,3000);
-
-/* Ambient mesh flicker — subtle line pulses even when idle */
-const ambientLines=['al-ba','al-bs1','al-bs2','al-bs3','al-as1','al-12','al-23','al-a2'];
-setInterval(()=>{
-  const id=ambientLines[Math.floor(Math.random()*ambientLines.length)];
-  const el=document.getElementById(id);
-  if(!el)return;
-  el.style.opacity='0.12';
-  el.style.strokeWidth='1.5';
-  setTimeout(()=>{el.style.opacity='0';},500);
-},1600);
+setInterval(refresh, 3000);
 </script>
 </body>
 </html>
