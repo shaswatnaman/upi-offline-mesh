@@ -46,6 +46,13 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- MySQL driver: used when the app runs with the "mysql" Spring profile -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- Bean validation (@NotBlank, @Min, etc.) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

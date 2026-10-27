@@ -1,0 +1,24 @@
+# Local MySQL for the `mysql` Spring profile.
+#   docker compose up -d
+#   ./mvnw spring-boot:run -Dspring-boot.run.profiles=mysql
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: upimesh-mysql
+    environment:
+      MYSQL_DATABASE: upimesh
+      MYSQL_USER: upimesh
+      MYSQL_PASSWORD: upimesh
+      MYSQL_ROOT_PASSWORD: rootpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - upimesh-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpass"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  upimesh-mysql-data:

@@ -262,6 +262,11 @@ upi-offline-mesh/
 | POST | `/api/mesh/reset` | — | Clear mesh + idempotency cache |
 | POST | `/api/bridge/ingest` | — | **The production endpoint.** Real bridges POST here. |
 | GET | `/h2-console` | — | Browse the in-memory database |
+| GET | `/servlet/health` | — | Servlet: connected database (via JDBC) + ledger totals |
+| GET | `/servlet/export` | — | Servlet: live ledger streamed as a CSV download |
+| POST | `/servlet/export` | — | Servlet: save a CSV snapshot to `data/exports/` |
+| GET | `/servlet/export?list=1` / `?file=NAME` | — | Servlet: list / download saved exports |
+| GET | `/servlet/audit?lines=50` | — | Servlet: tail of the ingest audit log |
 
 H2 console: JDBC URL `jdbc:h2:mem:upimesh`, username `sa`, no password.
 
@@ -309,6 +314,35 @@ Four tests in [`IdempotencyConcurrencyTest.java`](src/test/java/com/shaswatnaman
 | `tamperedCiphertextIsRejected` | Flipping one byte returns `INVALID` — GCM tag fails |
 | `singlePacketDeliveredByThreeBridgesSettlesExactlyOnce` | 3 concurrent threads → exactly 1 SETTLED, 2 DUPLICATE_DROPPED |
 | `insufficientBalanceIsRejectedNotSettled` | Insufficient balance returns `INVALID` and leaves balance unchanged |
+
+---
+
+## JDBC, MySQL, file handling and servlets
+
+**MySQL.** The default is still zero-setup H2. To persist data in MySQL:
+
+```bash
+docker compose up -d                                   # MySQL 8.4 on :3306 (db/user/password: upimesh)
+./mvnw spring-boot:run -Dspring-boot.run.profiles=mysql
+```
+
+`application-mysql.properties` holds the connection (override with `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DB`,
+`MYSQL_USER`, `MYSQL_PASSWORD`), a HikariCP pool, and `ddl-auto=update` so tables survive restarts.
+The idempotency cache is still in memory, so after a restart the unique index on `packet_hash` is the
+safety net against a replayed packet.
+
+**JDBC.** `jdbc/LedgerJdbcDao` uses `java.sql` directly: `DataSource` → `Connection` → `PreparedStatement` →
+`ResultSet`, all in try-with-resources, bind parameters only, rows streamed with a fetch size. It reads the
+same tables JPA writes, so it runs unchanged on H2 and MySQL. JPA still does the settlement writes.
+
+**File handling.** `files/LedgerFileService` writes CSV exports to `data/exports/` (temp file, then atomic rename;
+RFC 4180 quoting; formula-injection guard; names validated against path traversal). `files/AuditLogService`
+appends one line per ingested packet to `data/audit/ingest-audit.log` (lock-protected, size-based rotation,
+never fails a payment). Set the folder with `UPI_DATA_DIR`.
+
+**Servlets.** `servlet/` holds `HttpServlet` subclasses (`HealthServlet`, `LedgerExportServlet`,
+`AuditLogServlet`) and a `RequestLogFilter`, registered in `config/ServletConfig` under `/servlet/*`,
+next to the Spring MVC controllers under `/api/*`.
 
 ---
 

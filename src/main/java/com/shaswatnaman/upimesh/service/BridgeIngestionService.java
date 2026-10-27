@@ -1,6 +1,7 @@
 package com.shaswatnaman.upimesh.service;
 
 import com.shaswatnaman.upimesh.crypto.HybridCryptoService;
+import com.shaswatnaman.upimesh.files.AuditLogService;
 import com.shaswatnaman.upimesh.model.MeshPacket;
 import com.shaswatnaman.upimesh.model.PaymentInstruction;
 import com.shaswatnaman.upimesh.model.Transaction;
@@ -31,19 +32,29 @@ public class BridgeIngestionService {
     private final HybridCryptoService crypto;
     private final IdempotencyService idempotency;
     private final SettlementService settlement;
+    private final AuditLogService audit;
 
     @Value("${upi.mesh.packet-max-age-seconds:86400}")
     private long maxAgeSeconds;
 
     public BridgeIngestionService(HybridCryptoService crypto,
                                   IdempotencyService idempotency,
-                                  SettlementService settlement) {
+                                  SettlementService settlement,
+                                  AuditLogService audit) {
         this.crypto = crypto;
         this.idempotency = idempotency;
         this.settlement = settlement;
+        this.audit = audit;
     }
 
+    /** Runs the pipeline, then writes one line to the audit log whatever the outcome. */
     public IngestResult ingest(MeshPacket packet, String bridgeNodeId, int hopCount) {
+        IngestResult result = process(packet, bridgeNodeId, hopCount);
+        audit.record(result.outcome(), result.reason(), result.packetHash(), bridgeNodeId, hopCount);
+        return result;
+    }
+
+    private IngestResult process(MeshPacket packet, String bridgeNodeId, int hopCount) {
         try {
             String packetHash = crypto.hashCiphertext(packet.getCiphertext());
 
