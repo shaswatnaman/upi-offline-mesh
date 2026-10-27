@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: upi-offline-mesh
+    runtime: java
+    plan: free
+    branch: feature/jdbc-mysql-files-servlets
+
+    buildCommand: "./mvnw package -DskipTests --no-transfer-progress"
+    startCommand: "java -jar target/upi-offline-mesh-1.0.0.jar"
+
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: mysql
+      - key: MYSQL_HOST
+        fromDatabase:
+          name: upimesh-db
+          property: host
+      - key: MYSQL_PORT
+        fromDatabase:
+          name: upimesh-db
+          property: port
+      - key: MYSQL_DB
+        fromDatabase:
+          name: upimesh-db
+          property: database
+      - key: MYSQL_USER
+        fromDatabase:
+          name: upimesh-db
+          property: user
+      - key: MYSQL_PASSWORD
+        fromDatabase:
+          name: upimesh-db
+          property: password
+      - key: UPI_DATA_DIR
+        value: /tmp/upi-data
+
+databases:
+  - name: upimesh-db
+    plan: free
+    databaseName: upimesh
+    user: upimesh
