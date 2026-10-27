@@ -18,18 +18,42 @@ import java.util.TimeZone;
 import java.util.function.Consumer;
 
 /**
- * Plain JDBC access to the ledger tables, written with java.sql directly
- * (no JPA, no JdbcTemplate) so the JDBC steps are visible:
+ * ============================================================
+ * CONCEPT: JDBC (Java Database Connectivity)
+ * ============================================================
+ * JDBC is the standard Java API to talk to any relational database.
+ * The flow is always the same 5 steps:
  *
- *   DataSource -> Connection -> PreparedStatement -> ResultSet -> close (try-with-resources)
+ *   STEP 1: DataSource  → a pool of connections (Spring configures this)
+ *   STEP 2: Connection  → one active connection to the DB
+ *   STEP 3: PreparedStatement → the SQL query with ? placeholders
+ *   STEP 4: ResultSet   → the rows that come back from the DB
+ *   STEP 5: close()     → release the connection back to the pool
  *
+ * WHY PreparedStatement and NOT plain Statement?
+ *   Statement: "SELECT * FROM t WHERE vpa = '" + userInput + "'"
+ *              → SQL Injection risk! Attacker types: alice' OR '1'='1
+ *   PreparedStatement: "SELECT * FROM t WHERE vpa = ?"  then ps.setString(1, userInput)
+ *              → User input is ALWAYS treated as a value, never as SQL. Safe.
+ *
+ * WHY try-with-resources?
+ *   Connections are limited. If you forget to close them, the app runs out
+ *   and crashes. try-with-resources auto-closes Connection, PreparedStatement,
+ *   and ResultSet even if an exception is thrown midway.
+ *
+ * This class uses plain JDBC (no JPA, no JdbcTemplate) intentionally —
+ * so every step of the pipeline is visible and explainable in a viva.
  * It reads the same tables Hibernate creates ({@code accounts}, {@code transactions}),
  * so it works unchanged on H2 (default) and MySQL (profile {@code mysql}).
- * All SQL uses bind parameters, never string concatenation.
+ * ============================================================
  */
 @Repository
 public class LedgerJdbcDao {
 
+    // SQL CONCEPT: GROUP BY groups rows with the same 'status' value together.
+    // COUNT(*) counts rows per group. SUM(amount) adds up amounts per group.
+    // COALESCE(SUM(amount), 0) → if SUM returns NULL (no rows), give 0 instead of NULL.
+    // This single query gives us settled count, rejected count, and settled volume at once.
     private static final String SQL_STATUS_TOTALS =
             "SELECT status, COUNT(*) AS cnt, COALESCE(SUM(amount), 0) AS total "
                     + "FROM transactions GROUP BY status";
@@ -41,6 +65,8 @@ public class LedgerJdbcDao {
             "SELECT id, packet_hash, sender_vpa, receiver_vpa, amount, signed_at, "
                     + "settled_at, bridge_node_id, hop_count, status FROM transactions ";
 
+    // SQL CONCEPT: ? is a bind parameter. We fill it with ps.setString(1, senderVpa).
+    // ORDER BY id DESC → newest rows first. LIMIT ? → max N rows (prevents loading millions).
     private static final String SQL_BY_SENDER =
             SQL_COLUMNS + "WHERE sender_vpa = ? ORDER BY id DESC LIMIT ?";
 
@@ -56,11 +82,17 @@ public class LedgerJdbcDao {
 
     /** Totals for the ledger. Money is conserved, so totalBalance never changes after seeding. */
     public LedgerSummary summary() {
+        // JDBC STEP 1→2: DataSource gives us a Connection.
+        // try-with-resources → auto-closes the connection when done (or on exception).
+        // con.setReadOnly(true) → tells the DB this is a read-only query (minor optimization).
         try (Connection con = dataSource.getConnection()) {
             con.setReadOnly(true);
             long settled = 0, rejected = 0;
             BigDecimal settledVolume = BigDecimal.ZERO;
 
+            // JDBC STEP 3: PreparedStatement compiles the SQL query.
+            // JDBC STEP 4: executeQuery() sends it to DB, returns ResultSet (the rows).
+            // Both are in try-with-resources → auto-closed after use.
             try (PreparedStatement ps = con.prepareStatement(SQL_STATUS_TOTALS);
                  ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -108,12 +140,17 @@ public class LedgerJdbcDao {
     /**
      * Visits every transaction one row at a time, so a large ledger can be written to a
      * file or an HTTP response without loading it all into memory.
+     *
+     * JDBC CONCEPT: setFetchSize(500) → fetch 500 rows at a time from the DB instead of
+     * loading ALL rows into memory. If there are 1 million transactions, without this
+     * you'd load 1 million objects into RAM and crash. With this, only 500 are in memory
+     * at a time. This is called "streaming" or "cursor-based" reading.
      */
     public void forEachTransaction(Consumer<TransactionRow> consumer) {
         try (Connection con = dataSource.getConnection();
              PreparedStatement ps = con.prepareStatement(SQL_ALL)) {
             con.setReadOnly(true);
-            ps.setFetchSize(STREAM_FETCH_SIZE);
+            ps.setFetchSize(STREAM_FETCH_SIZE); // OOP CONCEPT: Consumer<T> is a functional interface — pass behaviour as a parameter
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     consumer.accept(mapRow(rs));
